@@ -1,5 +1,12 @@
 # School IT Inventory System (School Project Information System)
 
+![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
+![React](https://img.shields.io/badge/React-19-blue)
+![Node.js](https://img.shields.io/badge/Node.js-22-green)
+![SQLite](https://img.shields.io/badge/SQLite-3-blue)
+![License](https://img.shields.io/badge/License-Educational-orange)
+![Status](https://img.shields.io/badge/Status-In%20Development-yellow)
+
 A modern web-based IT Asset & Inventory Management System designed for educational institutions to manage, track, and maintain technology assets throughout their lifecycle.
 
 This project is being developed as part of an Introduction to Programming course while following real-world software engineering practices.
