@@ -1,227 +1,144 @@
-# School IT Inventory System (School Project Information System)
+# School IT Inventory System
 
-[![TypeScript](https://img.shields.io/badge/TypeScript-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
-[![React](https://img.shields.io/badge/React-blue?logo=react&logoColor=white)](https://react.dev/)
-[![Node.js](https://img.shields.io/badge/Node.js-green?logo=node.js&logoColor=white)](https://nodejs.org/)
-[![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)](https://sqlite.org/)
-![License](https://img.shields.io/badge/License-Educational-orange)
-![Status](https://img.shields.io/badge/Status-In%20Development-yellow)
+A modern inventory management application for school IT departments, built as a group project at Lancaster University.
 
-A modern web-based IT Asset & Inventory Management System designed for educational institutions to manage, track, and maintain technology assets throughout their lifecycle.
+## Tech Stack
 
-This project is being developed as part of an Introduction to Programming course while following real-world software engineering practices.
+| Layer | Technology |
+|---|---|
+| Frontend | React 18, TypeScript, Vite, Tailwind CSS, React Router v6 |
+| Backend | Node.js, Express, TypeScript, better-sqlite3 |
+| Shared | TypeScript types, Zod validation schemas, constants |
+| Tooling | ESLint, Prettier, npm workspaces |
 
----
+## Prerequisites
 
-## Features
+- **Node.js** >= 18
+- **npm** >= 9
 
-### Asset Management
+## Quick Start
 
-- Register IT assets
-- Asset categories
-- Barcode / QR support
-- Asset tagging
-- Serial number management
-- Warranty tracking
+```bash
+# 1. Clone the repository
+git clone <repo-url>
+cd school-it-inventory
 
-### Assignment Management
+# 2. Install all workspace dependencies
+npm install
 
-- Assign assets to staff
-- Assign assets to departments
-- Deploy assets to classrooms
-- Deploy network devices to physical locations
-- Return assets
-- Transfer assets
+# 3. Start both frontend and backend in development mode
+npm run dev
+```
 
-### Location Management
+The frontend dev server runs at **http://localhost:5173** (with API proxied to the backend).
 
-- Campus
-- Buildings
-- Floors
-- Offices
-- Classrooms
-- Server rooms
-- Network racks
+The backend API runs at **http://localhost:3001**.
 
-### Maintenance
-
-- Fault reporting
-- Repair history
-- Replacement tracking
-- Asset lifecycle
-- Retirement records
-
-### Reporting
-
-- Assets by department
-- Assets by person
-- Assets by location
-- Warranty reports
-- Maintenance reports
-- Audit logs
-
-### Security
-
-- User authentication
-- Role-based access control
-- Audit trail
-- Daily database backups
-
----
-
-# Technology Stack
-
-## Frontend
-
-- React
-- TypeScript
-- Vite
-- Tailwind CSS
-- React Router
-
-## Backend
-
-- Node.js
-- Express
-- TypeScript
-
-## Database
-
-- SQLite
-- better-sqlite3
-
----
-
-# Project Structure
+## Project Structure
 
 ```
 school-it-inventory/
-│
-├── frontend/
-├── backend/
-├── shared/
-├── docs/
-├── tests/
-├── installer/
-└── README.md
+├── frontend/                  # React + Vite + Tailwind CSS
+│   ├── src/
+│   │   ├── assets/            # Static assets (images, fonts, etc.)
+│   │   ├── components/        # Shared/reusable React components
+│   │   ├── features/          # Feature-specific code (page + sub-components)
+│   │   ├── hooks/             # Custom React hooks
+│   │   ├── layouts/           # Layout components (MainLayout, etc.)
+│   │   ├── pages/             # Page components (one per route)
+│   │   ├── routes/            # Route definitions
+│   │   ├── services/          # API client and service modules
+│   │   ├── styles/            # Global styles (Tailwind directives)
+│   │   ├── types/             # Frontend-specific TypeScript types
+│   │   └── utils/             # Utility functions
+│   ├── public/                # Static files served by Vite
+│   ├── index.html             # Vite entry HTML
+│   ├── vite.config.ts         # Vite configuration
+│   └── tailwind.config.js     # Tailwind CSS configuration
+├── backend/                   # Express + better-sqlite3
+│   ├── src/
+│   │   ├── config/            # Application configuration
+│   │   ├── controllers/       # Request handling and response formatting
+│   │   ├── database/          # Database connection, migrations, seeds
+│   │   ├── middleware/         # Express middleware (error handling, logging, etc.)
+│   │   ├── models/            # Database model interfaces/types
+│   │   ├── repositories/      # Data-access layer
+│   │   ├── routes/            # Route definitions
+│   │   ├── services/          # Business logic
+│   │   └── utils/             # Utility functions
+│   │   ├── app.ts             # Express app (middleware, routes, static serving)
+│   │   └── server.ts          # Entry point (starts the server)
+│   └── tsconfig.json
+├── shared/                    # Shared code used by both frontend and backend
+│   ├── src/
+│   │   ├── constants/         # Shared constants (app name, API prefix, labels)
+│   │   ├── schemas/           # Zod validation schemas
+│   │   └── types/             # Shared TypeScript type definitions
+│   │   └── index.ts           # Barrel export
+│   └── tsconfig.json
+├── database/                  # SQLite database directory (git-ignored)
+├── docs/                      # Project documentation
+├── tests/                     # Test suites (future)
+│   ├── backend/
+│   ├── e2e/
+│   └── frontend/
+├── .editorconfig              # Editor settings
+├── .eslintrc.json             # ESLint configuration
+├── .gitignore                 # Git ignore rules
+├── .prettierrc                # Prettier configuration
+├── package.json               # Root package.json (workspaces + scripts)
+├── tsconfig.base.json         # Shared TypeScript compiler options
+├── AGENTS.md                  # Coding conventions and guidelines
+└── README.md                  # This file
 ```
 
----
+## Available Scripts
 
-# System Architecture
+All scripts are run from the repository root.
 
+| Command | Description |
+|---|---|
+| `npm install` | Install all workspace dependencies |
+| `npm run dev` | Start both frontend and backend in dev mode concurrently |
+| `npm run dev:frontend` | Start only the frontend dev server |
+| `npm run dev:backend` | Start only the backend dev server in watch mode |
+| `npm run build` | Build all workspaces (shared → backend → frontend) |
+| `npm run start` | Start the production build (backend serves built frontend) |
+| `npm run lint` | Lint all TypeScript/TSX files |
+| `npm run lint:fix` | Lint and auto-fix all TypeScript/TSX files |
+| `npm run format` | Format all files with Prettier |
+| `npm run format:check` | Check formatting without writing changes |
+| `npm run typecheck` | Run TypeScript type checking across all workspaces |
+| `npm run clean` | Remove all `node_modules` and `dist` directories |
+
+## Development Workflow
+
+1. Run `npm run dev` to start both servers.
+2. The Vite dev server proxies `/api` requests to the Express backend on port 3001.
+3. Any changes to `shared/` will be reflected in both frontend and backend.
+4. Follow the conventions in [AGENTS.md](./AGENTS.md).
+5. Branch naming: `feature/<description>`, `fix/<description>`, `chore/<description>`.
+6. Commit messages: conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`).
+
+## Production Build
+
+```bash
+npm run build
+npm start
 ```
-Browser
-    │
-    ▼
-React Frontend
-    │
-REST API
-    │
-Express Backend
-    │
-SQLite Database
-```
 
-Only the backend communicates directly with the SQLite database.
+When running in production mode, the Express server serves the built frontend from `frontend/dist/` and handles all routing (SPA fallback).
 
----
+## Documentation
 
-# Core Modules
+- [Project Specification](./docs/PROJECT-SPECIFICATION.md)
+- [Database Design](./docs/DATABASE-DESIGN.md)
+- [API Specification](./docs/API-SPECIFICATION.md)
+- [Security Design](./docs/SECURITY-DESIGN.md)
+- [UI Guidelines](./docs/UI-GUIDELINES.md)
+- [Roadmap](./docs/ROADMAP.md)
+- [Testing Checklist](./docs/TESTING-CHECKLIST.md)
 
-- Dashboard
-- Asset Register
-- Departments
-- Staff
-- Locations
-- Assignments
-- Transfers
-- Maintenance
-- Replacements
-- Reports
-- User Management
+## License
 
----
-
-# Development Roadmap
-
-## Phase 1
-
-- Documentation
-- Requirements
-- Database Design
-- API Design
-
-## Phase 2
-
-- Backend Foundation
-- SQLite
-- Authentication
-- REST API
-
-## Phase 3
-
-- Frontend Foundation
-- Dashboard
-- Asset Registration
-
-## Phase 4
-
-- Assignments
-- Transfers
-- Returns
-
-## Phase 5
-
-- Maintenance
-- Replacements
-
-## Phase 6
-
-- Reports
-- Barcode & QR Labels
-
-## Phase 7
-
-- Installer
-- Backup & Restore
-
----
-
-# Goals
-
-The project aims to provide an easy-to-use inventory management solution that allows IT departments to:
-
-- Know where every IT asset is located
-- Know who is responsible for each asset
-- Track maintenance history
-- Track replacements
-- Maintain complete audit records
-- Produce inventory reports
-
----
-
-# Documentation
-
-Project documentation is available in the **docs/** directory.
-
-- Project Specification
-- Database Design
-- API Specification
-- UI Guidelines
-- Security Design
-- Testing Checklist
-
----
-
-# License
-
-This project is developed for educational purposes.
-
----
-
-# Authors
-
-Fundamentals Of Information Systems Group Project
-
-School IT Inventory Team
+MIT

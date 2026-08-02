@@ -1,0 +1,30 @@
+node_modules/
+dist/
+.env
+*.sqlite
+*.db
+database/backups/
+
+# Build artifacts
+*.tsbuildinfo
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+
+# Coverage
+coverage/
+
+# Environment
+.env.local
+.env.*.local

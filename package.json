@@ -1,0 +1,44 @@
+{
+  "name": "school-it-inventory",
+  "private": true,
+  "version": "1.0.0",
+  "description": "School IT Inventory System - A modern inventory management application for school IT departments",
+  "author": "IT Dept Group Project - Lancaster University",
+  "license": "MIT",
+  "workspaces": [
+    "frontend",
+    "backend",
+    "shared"
+  ],
+  "scripts": {
+    "dev": "concurrently \"npm run dev:backend\" \"npm run dev:frontend\"",
+    "dev:frontend": "npm -w frontend run dev",
+    "dev:backend": "npm -w backend run dev",
+    "build": "npm -w shared run build && npm -w backend run build && npm -w frontend run build",
+    "build:frontend": "npm -w frontend run build",
+    "build:backend": "npm -w backend run build",
+    "start": "npm -w backend run start",
+    "lint": "eslint . --ext .ts,.tsx --ignore-pattern node_modules --ignore-pattern dist",
+    "lint:fix": "eslint . --ext .ts,.tsx --ignore-pattern node_modules --ignore-pattern dist --fix",
+    "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,json,css,md}\" --ignore-path .gitignore",
+    "typecheck": "npm -w shared run typecheck && npm -w backend run typecheck && npm -w frontend run typecheck",
+    "clean": "rimraf node_modules dist frontend/dist backend/dist shared/dist"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "concurrently": "^8.2.0",
+    "eslint": "^8.57.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-react": "^7.34.0",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "prettier": "^3.2.0",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.4.0"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  }
+}
