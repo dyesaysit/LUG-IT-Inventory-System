@@ -1,9 +1,9 @@
 # School IT Inventory System (School Project Information System)
 
-![TypeScript](https://img.shields.io/badge/TypeScript-5.x-blue)
-![React](https://img.shields.io/badge/React-19-blue)
-![Node.js](https://img.shields.io/badge/Node.js-22-green)
-![SQLite](https://img.shields.io/badge/SQLite-3-blue)
+[![TypeScript](https://img.shields.io/badge/TypeScript-blue?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![React](https://img.shields.io/badge/React-blue?logo=react&logoColor=white)](https://react.dev/)
+[![Node.js](https://img.shields.io/badge/Node.js-green?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![SQLite](https://img.shields.io/badge/SQLite-003B57?logo=sqlite&logoColor=white)](https://sqlite.org/)
 ![License](https://img.shields.io/badge/License-Educational-orange)
 ![Status](https://img.shields.io/badge/Status-In%20Development-yellow)
 
