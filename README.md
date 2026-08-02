@@ -215,6 +215,6 @@ This project is developed for educational purposes.
 
 # Authors
 
-Introduction to Programming Group Project
+Fundamentals Of Information Systems Group Project
 
 School IT Inventory Team
