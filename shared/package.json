@@ -29,7 +29,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "tsc",
     "clean": "rimraf dist"
   },
   "dependencies": {
