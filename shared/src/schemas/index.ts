@@ -54,3 +54,5 @@ export const queryParamsSchema = z.object({
 export type CreateAssetInput = z.infer<typeof createAssetSchema>;
 export type UpdateAssetInput = z.infer<typeof updateAssetSchema>;
 export type QueryParamsInput = z.infer<typeof queryParamsSchema>;
+
+export * from './Asset';

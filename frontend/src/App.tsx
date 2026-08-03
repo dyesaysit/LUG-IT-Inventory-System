@@ -1,7 +1,7 @@
 import { Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
+import  DashboardPage  from './pages/DashboardPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 
 export default function App() {

@@ -8,7 +8,7 @@ import type { EnvConfig } from '../config';
  * @param config - Validated application configuration.
  * @returns An Express router with the health route mounted.
  */
-export function createHealthRoutes(config: EnvConfig): Router {
+export function createHealthRouter(config: EnvConfig): Router {
   const router = Router();
   const healthController = createHealthController(config);
 

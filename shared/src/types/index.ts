@@ -88,3 +88,11 @@ export type AssetStatus =
 // export interface User { ... }
 // export interface MaintenanceLog { ... }
 // export interface CheckoutRecord { ... }
+
+export type {
+  Asset as InventoryAsset,
+  AssetCategory as InventoryAssetCategory,
+  AssetListQuery,
+  CreateAssetInput as InventoryCreateAssetInput,
+  UpdateAssetInput as InventoryUpdateAssetInput,
+} from './Asset';

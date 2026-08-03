@@ -1,59 +1,46 @@
 import express from 'express';
-import cors from 'cors';
-import path from 'node:path';
-import { API_PREFIX } from 'shared';
-import { createErrorHandler, notFound, requestLogger } from './middleware';
-import { createHealthRoutes } from './routes/health.routes';
+import type { Express } from 'express';
 import type { EnvConfig } from './config';
+import { createAssetController } from './controllers/AssetController';
+import { createErrorHandler, notFound, requestLogger } from './middleware';
+import { createAssetRepository } from './repositories/AssetRepository';
+import { createAssetCategoryRouter, createAssetRouter } from './routes/asset.routes';
+import { createHealthRouter } from './routes/health.routes';
+import { createAssetService } from './services/AssetService';
 
 /**
- * Creates and returns the configured Express application.
+ * Creates the configured Express application.
  *
  * @param config - Validated application configuration.
- * @returns The configured Express app instance.
+ * @returns The configured Express application.
  */
-export function createApp(config: EnvConfig): express.Application {
+export function createApp(config: EnvConfig): Express {
   const app = express();
+  const assetRepository = createAssetRepository();
+  const assetService = createAssetService(assetRepository);
+  const assetController = createAssetController(assetService);
 
-  // ---------------
-  // Middleware
-  // ---------------
-
-  app.use(cors());
+// Body parsing
   app.use(express.json());
   app.use(requestLogger);
 
-  // ---------------
-  // API Routes
-  // ---------------
+// API routes
+  app.use('/api/health', createHealthRouter(config));
+  app.use('/api/assets', createAssetRouter(assetController));
+  app.use('/api/asset-categories', createAssetCategoryRouter(assetController));
 
-  app.use(`${API_PREFIX}/health`, createHealthRoutes(config));
-
-  // ---------------
-  // 404 for unmatched API routes
-  // ---------------
-
-  app.use(`${API_PREFIX}/*`, notFound);
-
-  // ---------------
-  // Serve frontend in production
-  // ---------------
-
+// Serve frontend static files in production
   if (config.NODE_ENV === 'production') {
-    const frontendDistPath = path.resolve(__dirname, '../../frontend/dist');
-
-    app.use(express.static(frontendDistPath));
-
-    // SPA fallback: serve index.html for any non-API route
+  const frontendDist = './frontend/dist';
+    app.use(express.static(frontendDist));
+  // SPA fallback — serve index.html for any non-API route
     app.get('*', (_req, res) => {
-      res.sendFile(path.join(frontendDistPath, 'index.html'));
+      res.sendFile(`${frontendDist}/index.html`);
     });
   }
 
-  // ---------------
-  // Error handling
-  // ---------------
-
+// Error handling (must be last)
+  app.use(notFound);
   app.use(createErrorHandler(config));
 
   return app;

@@ -1,3 +1,3 @@
 export { LoginPage } from './LoginPage';
-export { DashboardPage } from './DashboardPage';
+export { default as DashboardPage } from './DashboardPage';
 export { PlaceholderPage } from './PlaceholderPage';
