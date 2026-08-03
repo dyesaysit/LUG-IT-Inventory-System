@@ -1,6 +1,7 @@
 import type { Request, Response, NextFunction } from 'express';
+import type { EnvConfig } from '../config';
 
-// Placeholder: custom error class for the application
+/** Custom error class for the application. */
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;
@@ -14,26 +15,36 @@ export class AppError extends Error {
 }
 
 /**
- * Global error-handling middleware.
- * Catches all errors thrown in route handlers and returns a consistent JSON response.
+ * Creates a global error-handling middleware.
+ *
+ * In production the response body hides stack traces and only
+ * returns a generic message for unexpected errors.  In development
+ * the full error message is included.
+ *
+ * @param config - Validated application configuration.
+ * @returns An Express error-handling middleware function.
  */
-export function errorHandler(
-  err: Error,
-  _req: Request,
-  res: Response,
-  _next: NextFunction,
-): void {
-  if (err instanceof AppError) {
-    res.status(err.statusCode).json({
-      success: false,
-      error: err.message,
-    });
-    return;
-  }
+export function createErrorHandler(config: EnvConfig) {
+  return (
+    err: Error,
+    _req: Request,
+    res: Response,
+    _next: NextFunction,
+  ): void => {
+    const isProduction = config.NODE_ENV === 'production';
 
-  console.error('Unhandled error:', err);
-  res.status(500).json({
-    success: false,
-    error: 'Internal server error',
-  });
+    if (err instanceof AppError) {
+      res.status(err.statusCode).json({
+        success: false,
+        error: err.message,
+      });
+      return;
+    }
+
+    console.error('Unhandled error:', err);
+    res.status(500).json({
+      success: false,
+      error: isProduction ? 'Internal server error' : err.message,
+    });
+  };
 }

@@ -1,26 +1,27 @@
 import { Outlet } from 'react-router-dom';
+import { Sidebar } from '../components/Sidebar';
+import { TopNav } from '../components/TopNav';
+import { Footer } from '../components/Footer';
 
 /**
- * Main application layout.
- * Wraps all page content with a consistent header and footer shell.
+ * Authenticated layout shell with sidebar, compact top navigation, content area, and footer.
+ * Uses off-white background and padded content with a constrained max-width on large screens.
  */
 export function MainLayout() {
   return (
-    <div className="min-h-screen flex flex-col bg-gray-50">
-      <header className="bg-white shadow-sm border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-xl font-semibold text-gray-900">School IT Inventory System</h1>
-        </div>
-      </header>
+    <div className="min-h-screen bg-lug-off-white">
+      <Sidebar />
+      <TopNav />
 
-      <main className="flex-1 max-w-7xl mx-auto px-4 py-8 w-full">
-        <Outlet />
+      <main className="lg:pl-60 pt-12">
+        <div className="px-6 py-5 sm:px-8 lg:px-8 max-w-6xl mx-auto">
+          <Outlet />
+        </div>
       </main>
 
-      <footer className="bg-white border-t border-gray-200 py-4 text-center text-sm text-gray-500">
-        &copy; {new Date().getFullYear()} School IT Inventory System &mdash; Lancaster University
-        Group Project
-      </footer>
+      <div className="lg:pl-60">
+        <Footer />
+      </div>
     </div>
   );
 }
