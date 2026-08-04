@@ -5,7 +5,8 @@
     "build": "tsc",
     "dev": "nodemon src/server.ts",
     "start": "node src/server.ts",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --test -r ts-node/register src/tests/DepartmentService.test.ts"
   },
   "dependencies": {
     "better-sqlite3": "^13.0.2",

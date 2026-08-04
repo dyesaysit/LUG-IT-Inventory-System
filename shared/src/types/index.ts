@@ -54,6 +54,13 @@ export type {
 } from './Asset';
 
 export type {
+  Department,
+  CreateDepartmentInput,
+  UpdateDepartmentInput,
+  DepartmentListQuery,
+} from './Department';
+
+export type {
   Asset as InventoryAsset,
   AssetCategory as InventoryAssetCategory,
   AssetListQuery as InventoryAssetListQuery,

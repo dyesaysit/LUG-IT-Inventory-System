@@ -7,6 +7,10 @@ import { createAssetRepository } from './repositories/AssetRepository';
 import { createAssetCategoryRouter, createAssetRouter } from './routes/asset.routes';
 import { createHealthRouter } from './routes/health.routes';
 import { createAssetService } from './services/AssetService';
+import { DepartmentController } from './controllers/DepartmentController';
+import { createDepartmentRepository } from './repositories/DepartmentRepository';
+import { createDepartmentRouter } from './routes/department.routes';
+import { DepartmentService } from './services/DepartmentService';
 
 /**
  * Creates the configured Express application.
@@ -19,6 +23,9 @@ export function createApp(config: EnvConfig): Express {
   const assetRepository = createAssetRepository();
   const assetService = createAssetService(assetRepository);
   const assetController = createAssetController(assetService);
+  const departmentRepository = createDepartmentRepository();
+  const departmentService = new DepartmentService(departmentRepository);
+  const departmentController = new DepartmentController(departmentService);
 
 // Body parsing
   app.use(express.json());
@@ -28,6 +35,7 @@ export function createApp(config: EnvConfig): Express {
   app.use('/api/health', createHealthRouter(config));
   app.use('/api/assets', createAssetRouter(assetController));
   app.use('/api/asset-categories', createAssetCategoryRouter(assetController));
+  app.use('/api/departments', createDepartmentRouter(departmentController));
 
 // Serve frontend static files in production
   if (config.NODE_ENV === 'production') {

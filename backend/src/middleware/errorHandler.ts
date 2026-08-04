@@ -1,5 +1,6 @@
 import type { Request, Response, NextFunction } from 'express';
 import type { EnvConfig } from '../config';
+import { ZodError } from 'zod';
 
 /** Custom error class for the application. */
 export class AppError extends Error {
@@ -37,6 +38,14 @@ export function createErrorHandler(config: EnvConfig) {
       res.status(err.statusCode).json({
         success: false,
         error: err.message,
+      });
+      return;
+    }
+
+    if (err instanceof ZodError) {
+      res.status(400).json({
+        success: false,
+        error: err.issues.map((issue) => issue.message).join(', '),
       });
       return;
     }

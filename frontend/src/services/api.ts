@@ -5,6 +5,10 @@ import type {
   InventoryAssetCategory as AssetCategory,
   InventoryCreateAssetInput as CreateAssetInput,
   InventoryUpdateAssetInput as UpdateAssetInput,
+  CreateDepartmentInput,
+  Department,
+  DepartmentListQuery,
+  UpdateDepartmentInput,
 } from 'shared';
 
 /**
@@ -19,6 +23,7 @@ const api = axios.create({
  */
 const ASSETS_ENDPOINT = '/assets';
 const ASSET_CATEGORIES_ENDPOINT = '/asset-categories';
+const DEPARTMENTS_ENDPOINT = '/departments';
 
 interface AssetApiResponse {
   id: number;
@@ -141,4 +146,40 @@ export const updateAsset = async (id: number, asset: UpdateAssetInput): Promise<
  */
 export const archiveAsset = async (id: number): Promise<void> => {
   await api.delete(`${ASSETS_ENDPOINT}/${id}`);
+};
+
+/** Fetches departments matching the supplied filters. */
+export const fetchDepartments = async (
+  query: DepartmentListQuery = {},
+): Promise<Department[]> => {
+  const response = await api.get<Department[]>(DEPARTMENTS_ENDPOINT, { params: query });
+  return response.data;
+};
+
+/** Fetches one department by its numeric identifier. */
+export const fetchDepartment = async (id: number): Promise<Department> => {
+  const response = await api.get<Department>(`${DEPARTMENTS_ENDPOINT}/${id}`);
+  return response.data;
+};
+
+/** Creates a department. */
+export const createDepartment = async (
+  input: CreateDepartmentInput,
+): Promise<Department> => {
+  const response = await api.post<Department>(DEPARTMENTS_ENDPOINT, input);
+  return response.data;
+};
+
+/** Updates a department. */
+export const updateDepartment = async (
+  id: number,
+  input: UpdateDepartmentInput,
+): Promise<Department> => {
+  const response = await api.patch<Department>(`${DEPARTMENTS_ENDPOINT}/${id}`, input);
+  return response.data;
+};
+
+/** Archives a department without permanently deleting it. */
+export const archiveDepartment = async (id: number): Promise<void> => {
+  await api.delete(`${DEPARTMENTS_ENDPOINT}/${id}`);
 };

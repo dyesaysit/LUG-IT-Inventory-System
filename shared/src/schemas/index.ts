@@ -3,6 +3,7 @@ import { z } from 'zod';
 // Barrel for validation schemas
 
 export * from './Asset';
+export * from './Department';
 
 /**
  * Generic query parameters for list endpoints.

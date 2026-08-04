@@ -23,6 +23,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\" --ignore-path .gitignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,json,css,md}\" --ignore-path .gitignore",
     "typecheck": "npm -w shared run typecheck && npm -w backend run typecheck && npm -w frontend run typecheck",
+    "test": "npm -w shared run build && npm -w backend run test",
     "clean": "rimraf node_modules dist frontend/dist backend/dist shared/dist"
   },
   "devDependencies": {
