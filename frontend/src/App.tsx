@@ -1,6 +1,8 @@
 import { Routes, Route } from 'react-router-dom';
 import { MainLayout } from './layouts/MainLayout';
 import { LoginPage } from './pages/LoginPage';
+import AssetsPage from './pages/AssetsPage';
+import EditAssetPage from './pages/EditAssetPage';
 import  DashboardPage  from './pages/DashboardPage';
 import { PlaceholderPage } from './pages/PlaceholderPage';
 
@@ -11,7 +13,8 @@ export default function App() {
 
       <Route element={<MainLayout />}>
         <Route path="/dashboard" element={<DashboardPage />} />
-        <Route path="/assets" element={<PlaceholderPage title="Assets" description="Manage your IT assets" />} />
+        <Route path="/assets" element={<AssetsPage />} />
+        <Route path="/assets/:id/edit" element={<EditAssetPage />} />
         <Route path="/assignments" element={<PlaceholderPage title="Assignments" description="Track asset assignments" />} />
         <Route path="/people" element={<PlaceholderPage title="People" description="Manage personnel records" />} />
         <Route path="/departments" element={<PlaceholderPage title="Departments" description="View organizational departments" />} />

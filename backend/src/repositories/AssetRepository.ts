@@ -38,7 +38,38 @@ export class AssetRepository implements IAssetRepository {
   }
 
   async createAsset(asset: CreateAssetInput): Promise<Asset> {
-    const result = await this.db.prepare('INSERT INTO assets (asset_tag, serial_number, category_id, manufacturer, model, description, purchase_date, purchase_cost, warranty_expiry_date, condition, status, current_location, notes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)').run(asset);
+    const statement = this.db.prepare(`
+      INSERT INTO assets (
+        asset_tag,
+        serial_number,
+        category_id,
+        manufacturer,
+        model,
+        description,
+        purchase_date,
+        purchase_cost,
+        warranty_expiry_date,
+        condition,
+        status,
+        current_location,
+        notes
+      ) VALUES (
+        @assetTag,
+        @serialNumber,
+        @categoryId,
+        @manufacturer,
+        @model,
+        @description,
+        @purchaseDate,
+        @purchaseCost,
+        @warrantyExpiryDate,
+        @condition,
+        @status,
+        @currentLocation,
+        @notes
+      )
+    `);
+    const result = statement.run(asset);
     const insertedId = Number(result.lastInsertRowid);
     const insertedAsset = await this.getAssetById(insertedId);
     return insertedAsset as Asset;
@@ -46,7 +77,26 @@ export class AssetRepository implements IAssetRepository {
 
   async updateAsset(id: number, asset: UpdateAssetInput): Promise<Asset> {
     const validatedAsset = UpdateAssetInputSchema.parse(asset);
-    await this.db.prepare('UPDATE assets SET asset_tag = ?, serial_number = ?, category_id = ?, manufacturer = ?, model = ?, description = ?, purchase_date = ?, purchase_cost = ?, warranty_expiry_date = ?, condition = ?, status = ?, current_location = ?, notes = ? WHERE id = ?').run([validatedAsset.assetTag, validatedAsset.serialNumber, validatedAsset.categoryId, validatedAsset.manufacturer, validatedAsset.model, validatedAsset.description, validatedAsset.purchaseDate, validatedAsset.purchaseCost, validatedAsset.warrantyExpiryDate, validatedAsset.condition, validatedAsset.status, validatedAsset.currentLocation, validatedAsset.notes, id]);
+    const statement = this.db.prepare(`
+      UPDATE assets
+      SET
+        asset_tag = @assetTag,
+        serial_number = @serialNumber,
+        category_id = @categoryId,
+        manufacturer = @manufacturer,
+        model = @model,
+        description = @description,
+        purchase_date = @purchaseDate,
+        purchase_cost = @purchaseCost,
+        warranty_expiry_date = @warrantyExpiryDate,
+        condition = @condition,
+        status = @status,
+        current_location = @currentLocation,
+        notes = @notes,
+        updated_at = datetime('now')
+      WHERE id = @id
+    `);
+    statement.run({ ...validatedAsset, id });
     const updatedAsset = await this.getAssetById(id);
     return updatedAsset as Asset;
   }

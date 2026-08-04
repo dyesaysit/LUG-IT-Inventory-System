@@ -41,58 +41,22 @@ export interface QueryParams {
   search?: string;
 }
 
+
 // ---------------
-// Domain entities
+// Domain entities (real contracts from ./Asset)
 // ---------------
 
-/** An IT asset in the inventory (e.g. a laptop, monitor, projector, etc.) */
-export interface Asset {
-  id: UUID;
-  assetTag: string;
-  name: string;
-  category: AssetCategory;
-  status: AssetStatus;
-  location: string;
-  assignedTo?: string;
-  serialNumber?: string;
-  model?: string;
-  manufacturer?: string;
-  purchaseDate?: ISODateString;
-  warrantyExpiry?: ISODateString;
-  notes?: string;
-  createdAt: ISODateString;
-  updatedAt: ISODateString;
-}
-
-/** Categories for IT assets */
-export type AssetCategory =
-  | 'laptop'
-  | 'desktop'
-  | 'monitor'
-  | 'projector'
-  | 'printer'
-  | 'networking'
-  | 'peripheral'
-  | 'software'
-  | 'other';
-
-/** Statuses an asset can have */
-export type AssetStatus =
-  | 'available'
-  | 'assigned'
-  | 'maintenance'
-  | 'retired'
-  | 'lost';
-
-// Placeholder: additional entity interfaces will be added as features are implemented
-// export interface User { ... }
-// export interface MaintenanceLog { ... }
-// export interface CheckoutRecord { ... }
+/* Only aliased exports — the primary names come from schemas */
+export type {
+  Asset,
+  AssetCategory,
+  AssetListQuery,
+} from './Asset';
 
 export type {
   Asset as InventoryAsset,
   AssetCategory as InventoryAssetCategory,
-  AssetListQuery,
+  AssetListQuery as InventoryAssetListQuery,
   CreateAssetInput as InventoryCreateAssetInput,
   UpdateAssetInput as InventoryUpdateAssetInput,
 } from './Asset';

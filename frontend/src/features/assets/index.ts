@@ -1,0 +1,1 @@
+export { AssetsPageContent } from './AssetsPageContent';
