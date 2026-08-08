@@ -2,10 +2,12 @@ import { getCurrentDb } from '../database/connection';
 import { UpdateAssetInputSchema } from 'shared';
 import type {
   AssetListQuery,
+  CreateAssetCategoryInput,
   InventoryAsset as Asset,
   InventoryAssetCategory as AssetCategory,
   InventoryCreateAssetInput as CreateAssetInput,
   InventoryUpdateAssetInput as UpdateAssetInput,
+  UpdateAssetCategoryInput,
 } from 'shared';
 
 /**
@@ -19,6 +21,12 @@ export interface IAssetRepository {
   archiveAsset(id: number): Promise<void>;
   listCategories(): Promise<AssetCategory[]>;
   getCategoryById(id: number): Promise<AssetCategory | null>;
+  getCategoryByName(name: string): Promise<AssetCategory | null>;
+  createCategory(input: CreateAssetCategoryInput): Promise<AssetCategory>;
+  updateCategory(id: number, input: UpdateAssetCategoryInput): Promise<AssetCategory>;
+  setCategoryActive(id: number, isActive: boolean): Promise<AssetCategory>;
+  countAssetsInCategory(id: number): Promise<number>;
+  findLocation(id: number): Promise<{ id: number; name: string } | null>;
 }
 
 /**
@@ -51,6 +59,7 @@ export class AssetRepository implements IAssetRepository {
         warranty_expiry_date,
         condition,
         status,
+        current_location_id,
         current_location,
         notes
       ) VALUES (
@@ -65,7 +74,8 @@ export class AssetRepository implements IAssetRepository {
         @warrantyExpiryDate,
         @condition,
         @status,
-        @currentLocation,
+        @currentLocationId,
+        COALESCE((SELECT name FROM locations WHERE id = @currentLocationId), ''),
         @notes
       )
     `);
@@ -91,7 +101,8 @@ export class AssetRepository implements IAssetRepository {
         warranty_expiry_date = @warrantyExpiryDate,
         condition = @condition,
         status = @status,
-        current_location = @currentLocation,
+        current_location_id = @currentLocationId,
+        current_location = COALESCE((SELECT name FROM locations WHERE id = @currentLocationId), ''),
         notes = @notes,
         updated_at = datetime('now')
       WHERE id = @id
@@ -113,6 +124,72 @@ export class AssetRepository implements IAssetRepository {
   async getCategoryById(id: number): Promise<AssetCategory | null> {
     const row = await this.db.prepare('SELECT * FROM asset_categories WHERE id = ?').get(id);
     return row as AssetCategory | null;
+  }
+
+  async getCategoryByName(name: string): Promise<AssetCategory | null> {
+    const row = await this.db
+      .prepare('SELECT * FROM asset_categories WHERE name = ? COLLATE NOCASE')
+      .get(name);
+    return row as AssetCategory | null;
+  }
+
+  async createCategory(input: CreateAssetCategoryInput): Promise<AssetCategory> {
+    const statement = this.db.prepare(`
+      INSERT INTO asset_categories (name, description, is_active)
+      VALUES (@name, @description, @isActive)
+    `);
+    const result = statement.run({
+      name: input.name,
+      description: input.description ?? '',
+      isActive: (input.isActive ?? true) ? 1 : 0,
+    });
+    const created = await this.getCategoryById(Number(result.lastInsertRowid));
+    return created as AssetCategory;
+  }
+
+  async updateCategory(id: number, input: UpdateAssetCategoryInput): Promise<AssetCategory> {
+    const existing = await this.getCategoryById(id);
+    if (!existing) {
+      throw new Error(`Asset category ${id} not found`);
+    }
+    const statement = this.db.prepare(`
+      UPDATE asset_categories
+      SET name = @name, description = @description, is_active = @isActive, updated_at = datetime('now')
+      WHERE id = @id
+    `);
+    statement.run({
+      id,
+      name: input.name ?? existing.name,
+      description: input.description ?? existing.description,
+      isActive: (input.isActive ?? existing.isActive) ? 1 : 0,
+    });
+    const updated = await this.getCategoryById(id);
+    return updated as AssetCategory;
+  }
+
+  async setCategoryActive(id: number, isActive: boolean): Promise<AssetCategory> {
+    this.db
+      .prepare("UPDATE asset_categories SET is_active = ?, updated_at = datetime('now') WHERE id = ?")
+      .run(isActive ? 1 : 0, id);
+    const updated = await this.getCategoryById(id);
+    if (!updated) {
+      throw new Error(`Asset category ${id} not found`);
+    }
+    return updated;
+  }
+
+  async countAssetsInCategory(id: number): Promise<number> {
+    const row = this.db
+      .prepare('SELECT COUNT(*) as count FROM assets WHERE category_id = ? AND archived_at IS NULL')
+      .get(id) as { count: number };
+    return row.count;
+  }
+
+  async findLocation(id: number): Promise<{ id: number; name: string } | null> {
+    const row = this.db
+      .prepare('SELECT id, name FROM locations WHERE id = ? AND archived_at IS NULL')
+      .get(id) as { id: number; name: string } | undefined;
+    return row ?? null;
   }
 }
 

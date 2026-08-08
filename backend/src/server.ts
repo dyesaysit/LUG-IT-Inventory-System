@@ -7,15 +7,27 @@ dotenv.config({ path: path.resolve(__dirname, '../../.env') });
 import { createApp } from './app';
 import { parseEnv } from './config/env';
 import { getDb, runMigrations, closeDb } from './database';
+import { recordAudit } from './services/audit-event';
+import { ensureInitialAdministrator } from './services/AuthBootstrapService';
+import { PasswordService } from './services/PasswordService';
+import { createUserRepository } from './repositories/UserRepository';
+import { createRoleRepository } from './repositories/RoleRepository';
+import { createSessionRepository } from './repositories/SessionRepository';
+import { createAuditRepository } from './repositories/AuditRepository';
+import { AuditService } from './services/AuditService';
+import { AuthService } from './services/AuthService';
+import { applyPendingRestore, finalizePendingRestore } from './services/SafeBackupService';
 
 const main = async () => {
   const config = parseEnv();
 
+  const pendingRestore = applyPendingRestore(config);
   const db = getDb(config);
 
   const migrationsDir = path.resolve(__dirname, 'database/migrations');
   try {
     await runMigrations(db, migrationsDir);
+    finalizePendingRestore(config, db, pendingRestore);
   } catch (err) {
     console.error('Migration failed. Aborting startup.');
     console.error(err);
@@ -23,19 +35,38 @@ const main = async () => {
     process.exit(1);
   }
 
+  const passwordService = new PasswordService();
+  try {
+    await ensureInitialAdministrator(db, config, passwordService);
+  } catch (err) {
+    console.error(err instanceof Error ? err.message : 'Initial administrator bootstrap failed.');
+    closeDb();
+    process.exit(1);
+  }
+
+  const startupAuthService = new AuthService(
+    createUserRepository(),
+    createRoleRepository(),
+    createSessionRepository(),
+    passwordService,
+    new AuditService(createAuditRepository()),
+  );
+  await startupAuthService.cleanupExpiredSessions();
+
   const app = createApp(config);
 
   const server = app.listen(config.PORT, () => {
     console.log(`[${config.APP_NAME}] listening on http://localhost:${config.PORT}`);
     console.log(`Environment: ${config.NODE_ENV}`);
+    void recordAudit('SYSTEM',null,'START','Application started');
   });
 
   // Graceful shutdown
   process.on('SIGTERM', () => {
     console.log('\nReceived SIGTERM. Shutting down gracefully...');
-    server.close(() => {
+    server.close(async () => {
       console.log('HTTP server closed.');
-      closeDb();
+      await recordAudit('SYSTEM',null,'LOGOUT','Application shut down');closeDb();
       console.log('Database connection closed.');
       process.exit(0);
     });
@@ -43,9 +74,9 @@ const main = async () => {
 
   process.on('SIGINT', () => {
     console.log('\nReceived SIGINT. Shutting down gracefully...');
-    server.close(() => {
+    server.close(async () => {
       console.log('HTTP server closed.');
-      closeDb();
+      await recordAudit('SYSTEM',null,'LOGOUT','Application shut down');closeDb();
       console.log('Database connection closed.');
       process.exit(0);
     });

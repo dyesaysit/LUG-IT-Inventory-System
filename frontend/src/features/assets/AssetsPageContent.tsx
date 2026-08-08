@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
-import type { InventoryAsset as Asset, InventoryAssetCategory as AssetCategory } from 'shared';
-import AddAssetForm from '../../components/AddAssetForm';
-import { archiveAsset, fetchAssetCategories, fetchAssets } from '../../services/api';
+import type { AssetAssignment, InventoryAsset as Asset, InventoryAssetCategory as AssetCategory, MaintenanceRecord, RepairJob } from 'shared';
+import { AddAssetForm } from '../../components/AddAssetForm';
+import { archiveAsset, fetchAssetCategories, fetchAssets, fetchAssignments, fetchMaintenanceRecords, fetchRepairs } from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 
 const statuses = ['IN_STOCK', 'ASSIGNED', 'DEPLOYED', 'UNDER_REPAIR', 'RETIRED', 'LOST', 'DISPOSED'] as const;
 const conditions = ['NEW', 'GOOD', 'FAIR', 'POOR', 'DAMAGED'] as const;
@@ -14,8 +15,12 @@ const dateLabel = (value: string) => {
 
 /** Full asset inventory interface. */
 export function AssetsPageContent() {
+  const { hasPermission } = useAuth();
   const [assets, setAssets] = useState<Asset[]>([]);
   const [categories, setCategories] = useState<AssetCategory[]>([]);
+  const [assignments, setAssignments] = useState<AssetAssignment[]>([]);
+  const [maintenance, setMaintenance] = useState<MaintenanceRecord[]>([]);
+  const [repairs, setRepairs] = useState<RepairJob[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -29,9 +34,12 @@ export function AssetsPageContent() {
     setLoading(true);
     setError(null);
     try {
-      const [assetData, categoryData] = await Promise.all([fetchAssets(), fetchAssetCategories()]);
+      const [assetData, categoryData, assignmentData, maintenanceData, repairData] = await Promise.all([fetchAssets(), fetchAssetCategories(), fetchAssignments({ status: 'ACTIVE', pageSize: 100 }), fetchMaintenanceRecords({ pageSize: 100 }), fetchRepairs({ pageSize: 100 })]);
       setAssets(assetData);
       setCategories(categoryData);
+      setAssignments(assignmentData);
+      setMaintenance(maintenanceData);
+      setRepairs(repairData);
     } catch (loadError) {
       setError(loadError instanceof Error ? loadError.message : 'Unable to load assets.');
     } finally {
@@ -44,6 +52,9 @@ export function AssetsPageContent() {
   }, [loadData]);
 
   const categoryNames = useMemo(() => new Map(categories.map((category) => [category.id, category.name])), [categories]);
+  const assignmentsByAsset = useMemo(() => new Map(assignments.map((assignment) => [assignment.assetId, assignment])), [assignments]);
+  const openMaintenanceByAsset = useMemo(() => new Map(maintenance.filter((record) => !['COMPLETED','CANCELLED','BEYOND_REPAIR'].includes(record.status)).map((record) => [record.assetId, record])), [maintenance]);
+  const latestRepairByAsset = useMemo(() => new Map(repairs.map((record) => [record.assetId, record])), [repairs]);
   const filteredAssets = useMemo(() => {
     const query = search.trim().toLowerCase();
     return assets.filter((asset) => {
@@ -88,9 +99,9 @@ export function AssetsPageContent() {
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-xl font-semibold text-lug-charcoal">Assets</h1>
-          <p className="mt-1 text-sm text-lug-gray">Register and manage LUG IT equipment</p>
+          <p className="mt-1 text-sm text-lug-gray">Register and manage IT equipment</p>
         </div>
-        <button type="button" onClick={() => setAdding(true)} className="rounded bg-lug-red px-4 py-2 text-sm font-medium text-white hover:bg-red-700">Add asset</button>
+        {hasPermission('assets.create') && <button type="button" onClick={() => setAdding(true)} className="rounded bg-lug-red px-4 py-2 text-sm font-medium text-white hover:bg-red-700">Add asset</button>}
       </header>
 
       {success && <div className="rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{success}</div>}
@@ -136,7 +147,7 @@ export function AssetsPageContent() {
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-lug-light-gray bg-gray-50 text-xs text-lug-gray">
-                <tr>{['Asset tag', 'Asset', 'Category', 'Serial number', 'Status', 'Condition', 'Current location', 'Updated', 'Actions'].map((heading) => <th key={heading} className="px-4 py-3 font-medium">{heading}</th>)}</tr>
+                <tr>{['Asset tag', 'Asset', 'Category', 'Serial number', 'Status', 'Current assignment', 'Maintenance', 'Repair', 'Condition', 'Current location', 'Updated', 'Actions'].map((heading) => <th key={heading} className="px-4 py-3 font-medium">{heading}</th>)}</tr>
               </thead>
               <tbody className="divide-y divide-lug-light-gray">
                 {filteredAssets.map((asset) => (
@@ -146,10 +157,13 @@ export function AssetsPageContent() {
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{categoryNames.get(asset.categoryId) ?? `Category ${asset.categoryId}`}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{asset.serialNumber || '—'}</td>
                     <td className="whitespace-nowrap px-4 py-3"><span className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs">{label(asset.status)}</span></td>
+                    <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{(() => { const assignment = assignmentsByAsset.get(asset.id); return assignment ? assignment.personName ?? assignment.departmentName ?? assignment.locationName ?? 'Assigned' : '—'; })()}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{openMaintenanceByAsset.has(asset.id) ? label(openMaintenanceByAsset.get(asset.id)?.status ?? '') : '—'}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{latestRepairByAsset.has(asset.id) ? label(latestRepairByAsset.get(asset.id)?.status ?? '') : '—'}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{label(asset.condition)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{asset.currentLocation || '—'}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{dateLabel(asset.updatedAt)}</td>
-                    <td className="whitespace-nowrap px-4 py-3"><div className="flex gap-3"><Link to={`/assets/${asset.id}/edit`} className="text-lug-red hover:underline">Edit</Link><button type="button" onClick={() => void handleArchive(asset)} className="text-lug-gray hover:text-red-700">Archive</button></div></td>
+                    <td className="whitespace-nowrap px-4 py-3"><div className="flex gap-3"><Link to={`/assignments?assetId=${asset.id}`} className="text-lug-red hover:underline">Assignments</Link><Link to={`/maintenance?assetId=${asset.id}`} className="text-lug-red hover:underline">Maintenance</Link><Link to={`/repairs?assetId=${asset.id}`} className="text-lug-red hover:underline">Repairs</Link>{hasPermission('assets.update') && <Link to={`/assets/${asset.id}/edit`} className="text-lug-red hover:underline">Edit</Link>}{hasPermission('assets.archive') && <button type="button" onClick={() => void handleArchive(asset)} className="text-lug-gray hover:text-red-700">Archive</button>}</div></td>
                   </tr>
                 ))}
               </tbody>
@@ -161,8 +175,8 @@ export function AssetsPageContent() {
       {adding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="add-asset-title">
           <div className="max-h-[90vh] w-full max-w-3xl overflow-y-auto rounded bg-white p-6 shadow-xl">
-            <div className="mb-5"><h2 id="add-asset-title" className="text-lg font-semibold text-lug-charcoal">Add asset</h2><p className="mt-1 text-sm text-lug-gray">Register a device in the LUG inventory.</p></div>
-            <AddAssetForm onCancel={() => setAdding(false)} onSuccess={(asset) => { setAssets((current) => [asset, ...current]); setAdding(false); setSuccess(`${asset.assetTag} was added successfully.`); }} />
+            <div className="mb-5"><h2 id="add-asset-title" className="text-lg font-semibold text-lug-charcoal">Add asset</h2><p className="mt-1 text-sm text-lug-gray">Register a device in the inventory.</p></div>
+            <AddAssetForm onCancel={() => setAdding(false)} onSuccess={(asset: Asset) => { setAssets((current) => [asset, ...current]); setAdding(false); setSuccess(`${asset.assetTag} was added successfully.`); }} />
           </div>
         </div>
       )}

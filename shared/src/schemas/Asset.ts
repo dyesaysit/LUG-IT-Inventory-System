@@ -12,7 +12,7 @@ export const createAssetSchema = z.object({
   warrantyExpiryDate: z.string(),
   condition: z.enum(['NEW', 'GOOD', 'FAIR', 'POOR', 'DAMAGED']),
   status: z.enum(['IN_STOCK', 'ASSIGNED', 'DEPLOYED', 'UNDER_REPAIR', 'RETIRED', 'LOST', 'DISPOSED']),
-  currentLocation: z.string(),
+  currentLocationId: z.coerce.number().int().positive(),
   notes: z.string()
 });
 
@@ -28,7 +28,7 @@ export const updateAssetSchema = z.object({
   warrantyExpiryDate: z.string(),
   condition: z.enum(['NEW', 'GOOD', 'FAIR', 'POOR', 'DAMAGED']),
   status: z.enum(['IN_STOCK', 'ASSIGNED', 'DEPLOYED', 'UNDER_REPAIR', 'RETIRED', 'LOST', 'DISPOSED']),
-  currentLocation: z.string(),
+  currentLocationId: z.coerce.number().int().positive(),
   notes: z.string()
 });
 

@@ -1,4 +1,4 @@
-/** A Lancaster University Ghana department. */
+/** An organizational department. */
 export interface Department {
   id: number;
   code: string;

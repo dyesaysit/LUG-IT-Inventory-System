@@ -1,6 +1,6 @@
 {
   "compilerOptions": {
-    "target": "es2020",
+    "target": "es2021",
     "module": "commonjs",
     "outDir": "dist",
     "rootDir": "src",
@@ -11,5 +11,8 @@
     "paths": {
       "@school-it-inventory/shared/*": ["../shared/*"]
     }
+  },
+  "ts-node": {
+    "files": true
   }
 }

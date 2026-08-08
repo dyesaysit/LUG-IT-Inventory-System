@@ -1,27 +1,44 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const logoPath = '/LUG-logo-200x84-transparent.png';
+import { useAuth } from '../context/AuthContext';
+import { useApplicationSettings } from '../context/ApplicationSettingsContext';
 
 /**
- * Professional institutional login page for Lancaster University Ghana.
- * Uses a split-layout with branding panel and clean white form.
+ * White-label institutional login page.
+ * All branding comes from the ApplicationSettings provider.
  */
 export function LoginPage() {
   const navigate = useNavigate();
+  const { login } = useAuth();
+  const { settings } = useApplicationSettings();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const logoUrl = settings?.logoUrl || '/logo-placeholder.png';
+  const logoHeight = settings?.logoDisplaySize ? `${parseInt(settings.logoDisplaySize, 10) * 0.45}px` : '3.5rem';
+  const orgName = settings?.organizationName || 'Organization';
+  const sysName = settings?.systemName || 'IT Inventory System';
+
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email || !password) {
       setError('Please fill in all fields.');
       return;
     }
     setError('');
-    navigate('/dashboard');
+    setIsSubmitting(true);
+    try {
+      const user = await login({ identity: email, password, rememberMe });
+      navigate(user.mustChangePassword ? '/change-password' : '/home', { replace: true });
+    } catch {
+      setError('Invalid username/email or password.');
+      setPassword('');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -31,16 +48,16 @@ export function LoginPage() {
         <div className="absolute inset-0 bg-gradient-to-br from-lug-burgundy/20 to-lug-charcoal" />
         <div className="relative flex flex-col justify-center px-14 py-12 w-full">
           <div className="mb-10">
-            {/* Logo on a subtle white backing for visibility */}
             <div className="inline-block bg-white/95 rounded-md px-5 py-3 mb-8">
               <img
-                src={logoPath}
-                alt="Lancaster University Ghana"
-                className="h-14 w-auto"
+                src={logoUrl}
+                alt={orgName}
+                style={{ height: logoHeight }}
+                className="w-auto object-contain"
               />
             </div>
             <h1 className="text-3xl font-semibold text-white tracking-tight">
-              LUG IT Inventory System
+              {sysName}
             </h1>
             <p className="mt-3 text-base text-gray-300 max-w-sm leading-relaxed">
               IT Asset and Inventory Management
@@ -48,7 +65,7 @@ export function LoginPage() {
           </div>
           <div className="mt-auto pt-8 border-t border-white/10">
             <p className="text-sm text-gray-400">
-              Lancaster University Ghana
+              {orgName}
             </p>
           </div>
         </div>
@@ -61,13 +78,14 @@ export function LoginPage() {
           <div className="lg:hidden text-center mb-10">
             <div className="inline-block bg-white rounded-md px-4 py-2 shadow-sm border border-lug-light-gray mb-6">
               <img
-                src={logoPath}
-                alt="Lancaster University Ghana"
-                className="h-12 w-auto mx-auto"
+                src={logoUrl}
+                alt={orgName}
+                style={{ height: logoHeight }}
+                className="w-auto mx-auto object-contain"
               />
             </div>
             <h1 className="text-2xl font-semibold text-lug-charcoal tracking-tight">
-              LUG IT Inventory System
+              {sysName}
             </h1>
             <p className="mt-2 text-sm text-lug-gray">
               IT Asset and Inventory Management
@@ -134,15 +152,16 @@ export function LoginPage() {
 
               <button
                 type="submit"
-                className="w-full bg-lug-red hover:bg-lug-burgundy text-white font-medium py-2.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-lug-red focus:ring-offset-2"
+                disabled={isSubmitting}
+                className="w-full bg-lug-red hover:bg-lug-burgundy text-white font-medium py-2.5 rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-lug-red focus:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed"
               >
-                Sign in
+                {isSubmitting ? 'Signing in…' : 'Sign in'}
               </button>
             </form>
           </div>
 
           <p className="text-center text-xs text-lug-gray mt-6">
-            Authorized access for Lancaster University Ghana staff
+            Authorized access for {orgName} staff
           </p>
         </div>
       </div>

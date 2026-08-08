@@ -1,8 +1,11 @@
 import axios from 'axios';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { Department } from 'shared';
+import { useAuth } from '../context/AuthContext';
+import { Link } from 'react-router-dom';
+import type { AssetAssignment, Department } from 'shared';
 import { DepartmentForm } from '../components/DepartmentForm';
-import { archiveDepartment, fetchDepartments } from '../services/api';
+import { archiveDepartment, fetchAssignments, fetchDepartments } from '../services/api';
+import { useApplicationSettings } from '../context/ApplicationSettingsContext';
 
 const pageSize = 10;
 const formatDate = (value: string) => {
@@ -12,7 +15,11 @@ const formatDate = (value: string) => {
 
 /** Complete Departments management page. */
 export default function DepartmentsPage() {
+  const { hasPermission } = useAuth();
+  const { settings } = useApplicationSettings();
+  const orgName = settings?.organizationName || 'Organization';
   const [departments, setDepartments] = useState<Department[]>([]);
+  const [activeAssignments, setActiveAssignments] = useState<AssetAssignment[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -26,7 +33,12 @@ export default function DepartmentsPage() {
     setLoading(true);
     setError(null);
     try {
-      setDepartments(await fetchDepartments({ pageSize: 100, sortBy: 'name' }));
+      const [departmentData, assignmentData] = await Promise.all([
+        fetchDepartments({ pageSize: 100, sortBy: 'name' }),
+        fetchAssignments({ status: 'ACTIVE', pageSize: 100 }),
+      ]);
+      setDepartments(departmentData);
+      setActiveAssignments(assignmentData);
     } catch (requestError) {
       setError(axios.isAxiosError<{ error?: string }>(requestError)
         ? requestError.response?.data.error ?? requestError.message
@@ -88,8 +100,8 @@ export default function DepartmentsPage() {
   return (
     <div className="space-y-5">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div><h1 className="text-xl font-semibold text-lug-charcoal">Departments</h1><p className="mt-1 text-sm text-lug-gray">Manage Lancaster University Ghana departments</p></div>
-        <button type="button" onClick={() => setAdding(true)} className="rounded bg-lug-red px-4 py-2 text-sm font-medium text-white hover:bg-red-700">Add department</button>
+        <div><h1 className="text-xl font-semibold text-lug-charcoal">Departments</h1><p className="mt-1 text-sm text-lug-gray">Manage {orgName} departments</p></div>
+        {hasPermission('departments.create') && <button type="button" onClick={() => setAdding(true)} className="rounded bg-lug-red px-4 py-2 text-sm font-medium text-white hover:bg-red-700">Add department</button>}
       </header>
 
       {success && <div className="rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{success}</div>}
@@ -110,11 +122,11 @@ export default function DepartmentsPage() {
       <section className="overflow-hidden rounded border border-lug-light-gray bg-white" aria-label="Department list">
         {loading ? <div className="px-6 py-14 text-center text-sm text-lug-gray">Loading departments…</div>
           : visible.length === 0 ? <div className="px-6 py-14 text-center"><h2 className="font-semibold text-lug-charcoal">{departments.length === 0 ? 'No departments registered yet' : 'No departments match your filters'}</h2><p className="mt-2 text-sm text-lug-gray">{departments.length === 0 ? 'Use the Add department button to create the first department.' : 'Clear or adjust the filters to see more results.'}</p></div>
-          : <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="border-b border-lug-light-gray bg-gray-50 text-xs text-lug-gray"><tr>{['Code', 'Department', 'Head of department', 'Email', 'Phone', 'Status', 'Updated', 'Actions'].map((heading) => <th key={heading} className="px-4 py-3 font-medium">{heading}</th>)}</tr></thead><tbody className="divide-y divide-lug-light-gray">{visible.map((department) => <tr key={department.id} className="hover:bg-gray-50/60"><td className="px-4 py-3 font-medium text-lug-charcoal">{department.code}</td><td className="px-4 py-3"><p className="font-medium text-lug-charcoal">{department.name}</p><p className="max-w-xs truncate text-xs text-lug-gray">{department.description || '—'}</p></td><td className="px-4 py-3 text-lug-gray">{department.headOfDepartment || '—'}</td><td className="px-4 py-3 text-lug-gray">{department.email || '—'}</td><td className="px-4 py-3 text-lug-gray">{department.phone || '—'}</td><td className="px-4 py-3"><span className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs">{department.isActive ? 'Active' : 'Inactive'}</span></td><td className="px-4 py-3 text-lug-gray">{formatDate(department.updatedAt)}</td><td className="px-4 py-3"><div className="flex gap-3"><button type="button" onClick={() => setEditing(department)} className="text-lug-red hover:underline">Edit</button><button type="button" onClick={() => void handleArchive(department)} className="text-lug-gray hover:text-red-700">Archive</button></div></td></tr>)}</tbody></table></div>}
+          : <div className="overflow-x-auto"><table className="min-w-full text-left text-sm"><thead className="border-b border-lug-light-gray bg-gray-50 text-xs text-lug-gray"><tr>{['Code', 'Department', 'Head of department', 'Email', 'Phone', 'Assigned assets', 'Status', 'Updated', 'Actions'].map((heading) => <th key={heading} className="px-4 py-3 font-medium">{heading}</th>)}</tr></thead><tbody className="divide-y divide-lug-light-gray">{visible.map((department) => <tr key={department.id} className="hover:bg-gray-50/60"><td className="px-4 py-3 font-medium text-lug-charcoal">{department.code}</td><td className="px-4 py-3"><p className="font-medium text-lug-charcoal">{department.name}</p><p className="max-w-xs truncate text-xs text-lug-gray">{department.description || '—'}</p></td><td className="px-4 py-3 text-lug-gray">{department.headOfDepartment || '—'}</td><td className="px-4 py-3 text-lug-gray">{department.email || '—'}</td><td className="px-4 py-3 text-lug-gray">{department.phone || '—'}</td><td className="px-4 py-3 text-lug-gray">{activeAssignments.filter((item) => item.departmentId === department.id).length}</td><td className="px-4 py-3"><span className="rounded border border-gray-200 bg-gray-50 px-2 py-1 text-xs">{department.isActive ? 'Active' : 'Inactive'}</span></td><td className="px-4 py-3 text-lug-gray">{formatDate(department.updatedAt)}</td><td className="px-4 py-3"><div className="flex gap-3"><Link to={`/assignments?departmentId=${department.id}`} className="text-lug-red hover:underline">Assigned assets</Link>{hasPermission('departments.update') && <button type="button" onClick={() => setEditing(department)} className="text-lug-red hover:underline">Edit</button>}{hasPermission('departments.archive') && <button type="button" onClick={() => void handleArchive(department)} className="text-lug-gray hover:text-red-700">Archive</button>}</div></td></tr>)}</tbody></table></div>}
         {!loading && filtered.length > pageSize && <div className="flex items-center justify-between border-t border-lug-light-gray px-4 py-3 text-sm"><span className="text-lug-gray">Page {page} of {totalPages}</span><div className="flex gap-2"><button type="button" disabled={page === 1} onClick={() => setPage((value) => value - 1)} className="rounded border px-3 py-1 disabled:opacity-40">Previous</button><button type="button" disabled={page === totalPages} onClick={() => setPage((value) => value + 1)} className="rounded border px-3 py-1 disabled:opacity-40">Next</button></div></div>}
       </section>
 
-      {(adding || editing) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="department-form-title"><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded bg-white p-6 shadow-xl"><div className="mb-5"><h2 id="department-form-title" className="text-lg font-semibold text-lug-charcoal">{editing ? 'Edit department' : 'Add department'}</h2><p className="mt-1 text-sm text-lug-gray">{editing ? 'Update the department details.' : 'Create a Lancaster University Ghana department.'}</p></div><DepartmentForm department={editing ?? undefined} onCancel={() => { setAdding(false); setEditing(null); }} onSuccess={handleSaved} /></div></div>}
+      {(adding || editing) && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true" aria-labelledby="department-form-title"><div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded bg-white p-6 shadow-xl"><div className="mb-5"><h2 id="department-form-title" className="text-lg font-semibold text-lug-charcoal">{editing ? 'Edit department' : 'Add department'}</h2><p className="mt-1 text-sm text-lug-gray">{editing ? 'Update the department details.' : `Create a ${orgName} department.`}</p></div><DepartmentForm department={editing ?? undefined} onCancel={() => { setAdding(false); setEditing(null); }} onSuccess={handleSaved} /></div></div>}
     </div>
   );
 }

@@ -21,7 +21,7 @@ describe('AssetRepository', () => {
       warrantyExpiryDate: '2023-01-01',
       condition: 'NEW',
       status: 'IN_STOCK',
-      currentLocation: 'Test Location',
+      currentLocationId: 1,
       notes: 'Test Notes',
     };
     const createdAsset = await repository.createAsset(asset);
@@ -42,7 +42,7 @@ describe('AssetRepository', () => {
       warrantyExpiryDate: '2023-01-01',
       condition: 'NEW',
       status: 'IN_STOCK',
-      currentLocation: 'Test Location',
+      currentLocationId: 1,
       notes: 'Test Notes',
     };
     const createdAsset = await repository.createAsset(asset);
@@ -64,13 +64,14 @@ describe('AssetRepository', () => {
       warrantyExpiryDate: '2023-01-01',
       condition: 'NEW',
       status: 'IN_STOCK',
-      currentLocation: 'Test Location',
+      currentLocationId: 1,
       notes: 'Test Notes',
     };
     const createdAsset = await repository.createAsset(asset);
     const updatedAsset = {
       ...createdAsset,
       assetTag: 'Updated Test Asset',
+      currentLocationId: createdAsset.currentLocationId ?? 1,
     };
     await repository.updateAsset(createdAsset.id, updatedAsset);
     const retrievedAsset = await repository.getAssetById(createdAsset.id);
@@ -91,7 +92,7 @@ describe('AssetRepository', () => {
       warrantyExpiryDate: '2023-01-01',
       condition: 'NEW',
       status: 'IN_STOCK',
-      currentLocation: 'Test Location',
+      currentLocationId: 1,
       notes: 'Test Notes',
     };
     const createdAsset = await repository.createAsset(asset);

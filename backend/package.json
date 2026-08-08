@@ -6,16 +6,25 @@
     "dev": "nodemon src/server.ts",
     "start": "node src/server.ts",
     "typecheck": "tsc --noEmit",
-    "test": "node --test -r ts-node/register src/tests/DepartmentService.test.ts"
+    "test": "node --test -r ts-node/register src/tests/DepartmentService.test.ts src/tests/PersonService.test.ts src/tests/LocationService.test.ts src/tests/AssignmentService.test.ts src/tests/MaintenanceService.test.ts src/tests/RepairService.test.ts src/tests/AuditService.test.ts src/tests/AuthService.test.ts src/tests/PasswordSchema.test.ts src/tests/SettingsService.test.ts src/tests/BackupService.test.ts src/tests/ReportService.test.ts",
+    "auth:reset-admin": "ts-node src/scripts/reset-admin-password.ts"
   },
   "dependencies": {
+    "bcryptjs": "^3.0.3",
     "better-sqlite3": "^13.0.2",
+    "cookie-parser": "^1.4.7",
     "dotenv": "^17.4.2",
+    "exceljs": "^4.4.0",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.6.1",
+    "helmet": "^8.3.0",
+    "multer": "^2.2.0",
     "zod": "^4.4.3"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^9.6.0",
-    "@types/express": "^5.0.6"
+    "@types/cookie-parser": "^1.4.10",
+    "@types/express": "^5.0.6",
+    "@types/multer": "^2.2.0"
   }
 }

@@ -1,7 +1,7 @@
-import axios from 'axios';
 import { useState } from 'react';
 import type { CreateDepartmentInput, Department } from 'shared';
 import { createDepartment, updateDepartment } from '../services/api';
+import { apiErrorMessage } from '../utils/api-error';
 
 interface DepartmentFormProps {
   department?: Department;
@@ -70,10 +70,7 @@ export function DepartmentForm({ department, onCancel, onSuccess }: DepartmentFo
         : await createDepartment(input);
       onSuccess(saved);
     } catch (requestError) {
-      const message = axios.isAxiosError<{ error?: string }>(requestError)
-        ? requestError.response?.data.error ?? requestError.message
-        : 'Unable to save the department.';
-      setError(message);
+      setError(apiErrorMessage(requestError, 'Unable to save the department. Please try again.'));
     } finally {
       setSubmitting(false);
     }

@@ -18,6 +18,7 @@
     "build:frontend": "npm -w frontend run build",
     "build:backend": "npm -w backend run build",
     "start": "npm -w backend run start",
+    "auth:reset-admin": "npm -w backend run auth:reset-admin",
     "lint": "eslint . --ext .ts,.tsx --ignore-pattern node_modules --ignore-pattern dist",
     "lint:fix": "eslint . --ext .ts,.tsx --ignore-pattern node_modules --ignore-pattern dist --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json,css,md}\" --ignore-path .gitignore",

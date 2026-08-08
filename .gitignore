@@ -2,8 +2,12 @@ node_modules/
 dist/
 .env
 *.sqlite
+*.sqlite-*
 *.db
 database/backups/
+backups/
+*.restore-pending
+*.restore-old
 
 # Build artifacts
 *.tsbuildinfo

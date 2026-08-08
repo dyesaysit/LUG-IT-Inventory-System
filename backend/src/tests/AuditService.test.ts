@@ -1,0 +1,25 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import path from 'node:path';
+import { describe, it } from 'node:test';
+import Database from 'better-sqlite3';
+import { DepartmentController } from '../controllers/DepartmentController';
+import { AuditRepository } from '../repositories/AuditRepository';
+import { DepartmentRepository } from '../repositories/DepartmentRepository';
+import { AuditService } from '../services/AuditService';
+import { DepartmentService } from '../services/DepartmentService';
+import { configureAudit } from '../services/audit-event';
+const sql=(name:string)=>fs.readFileSync(path.resolve(__dirname,`../database/migrations/${name}`),'utf8');
+const setup=()=>{const db=new Database(':memory:');for(const name of ['002_assets.sql','003_departments.sql','009_audit_logs.sql'])db.exec(sql(name));const service=new AuditService(new AuditRepository(db));configureAudit(service);return{db,service};};
+const entry={entityType:'ASSET' as const,entityId:1,action:'CREATE' as const,performedBy:'tester',performedByName:'Test User',summary:'Created asset A1',newValues:{assetTag:'A1'},success:true};
+describe('AuditService',()=>{
+ it('creates audit entry',async()=>{const x=setup();assert.equal((await x.service.record(entry)).summary,entry.summary);x.db.close();});
+ it('automatically logs successful mutations',async()=>{const x=setup();const controller=new DepartmentController(new DepartmentService(new DepartmentRepository(x.db)));await controller.create({code:'IT',name:'Information Technology'});assert.equal((await x.service.list({}))[0]?.action,'CREATE');x.db.close();});
+ it('searches',async()=>{const x=setup();await x.service.record(entry);assert.equal((await x.service.list({search:'A1'})).length,1);x.db.close();});
+ it('paginates',async()=>{const x=setup();await x.service.record(entry);await x.service.record({...entry,summary:'Second'});assert.equal((await x.service.list({page:2,pageSize:1}))[0]?.summary,entry.summary);x.db.close();});
+ it('filters entity and action',async()=>{const x=setup();await x.service.record(entry);assert.equal((await x.service.list({entityType:'ASSET',action:'CREATE'})).length,1);x.db.close();});
+ it('looks up entity timeline',async()=>{const x=setup();await x.service.record(entry);assert.equal((await x.service.entity('ASSET',1)).length,1);x.db.close();});
+ it('filters dates',async()=>{const x=setup();await x.service.record(entry);const today=new Date().toISOString().slice(0,10);assert.equal((await x.service.list({dateFrom:today,dateTo:today})).length,1);x.db.close();});
+ it('filters success',async()=>{const x=setup();await x.service.record({...entry,success:false});assert.equal((await x.service.list({success:false})).length,1);x.db.close();});
+ it('summarizes events',async()=>{const x=setup();await x.service.record(entry);await x.service.record({...entry,success:false});assert.deepEqual(await x.service.summary(),{totalEvents:2,todayEvents:2,successfulEvents:1,failedEvents:1});x.db.close();});
+});
