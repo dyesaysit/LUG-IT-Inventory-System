@@ -14,6 +14,9 @@ export interface Asset {
   warrantyExpiryDate: string | null;
   condition: 'NEW' | 'GOOD' | 'FAIR' | 'POOR' | 'DAMAGED';
   status: 'IN_STOCK' | 'ASSIGNED' | 'DEPLOYED' | 'UNDER_REPAIR' | 'RETIRED' | 'LOST' | 'DISPOSED';
+  /** Foreign key to the Locations Master; null for legacy/unmatched records. */
+  currentLocationId: number | null;
+  /** Display name of the current location (from the Locations Master, or legacy free text). */
   currentLocation: string;
   notes: string;
   createdAt: string;
@@ -34,6 +37,24 @@ export interface AssetCategory {
 }
 
 /**
+ * Input for creating an asset category.
+ */
+export interface CreateAssetCategoryInput {
+  name: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+/**
+ * Input for updating an asset category.
+ */
+export interface UpdateAssetCategoryInput {
+  name?: string;
+  description?: string;
+  isActive?: boolean;
+}
+
+/**
  * Create asset input type definition.
  */
 export interface CreateAssetInput {
@@ -48,7 +69,8 @@ export interface CreateAssetInput {
   warrantyExpiryDate: string | null;
   condition: 'NEW' | 'GOOD' | 'FAIR' | 'POOR' | 'DAMAGED';
   status: 'IN_STOCK' | 'ASSIGNED' | 'DEPLOYED' | 'UNDER_REPAIR' | 'RETIRED' | 'LOST' | 'DISPOSED';
-  currentLocation: string;
+  /** Selected location from the Locations Master. */
+  currentLocationId: number;
   notes: string;
 }
 
@@ -67,7 +89,8 @@ export interface UpdateAssetInput {
   warrantyExpiryDate?: string | null;
   condition?: 'NEW' | 'GOOD' | 'FAIR' | 'POOR' | 'DAMAGED';
   status?: 'IN_STOCK' | 'ASSIGNED' | 'DEPLOYED' | 'UNDER_REPAIR' | 'RETIRED' | 'LOST' | 'DISPOSED';
-  currentLocation?: string;
+  /** Selected location from the Locations Master. */
+  currentLocationId?: number;
   notes?: string;
 }
 

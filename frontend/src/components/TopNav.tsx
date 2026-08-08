@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useLocation } from 'react-router-dom';
 import { MobileMenu } from './MobileMenu';
+import { useApplicationSettings } from '../context/ApplicationSettingsContext';
+import { useAuth } from '../context/AuthContext';
 
 const pageNames: Record<string, string> = {
   '/dashboard': 'Overview',
@@ -11,9 +13,12 @@ const pageNames: Record<string, string> = {
   '/locations': 'Locations',
   '/maintenance': 'Maintenance',
   '/repairs': 'Repairs',
+  '/tickets': 'Tickets',
+  '/equipment-requests': 'Equipment requests',
   '/reports': 'Reports',
   '/audit-log': 'Audit log',
   '/settings': 'Settings',
+  '/users': 'User management',
 };
 
 /**
@@ -23,6 +28,9 @@ export function TopNav() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const location = useLocation();
   const currentPage = pageNames[location.pathname] || '';
+  const { settings } = useApplicationSettings();
+  const mobileTitle = settings?.systemName || 'IT Inventory';
+  const { user, logout } = useAuth();
 
   return (
     <>
@@ -63,7 +71,7 @@ export function TopNav() {
 
             {/* Mobile title */}
             <span className="lg:hidden text-sm font-semibold text-lug-charcoal truncate">
-              LUG IT Inventory
+              {mobileTitle}
             </span>
           </div>
 
@@ -122,11 +130,11 @@ export function TopNav() {
             {/* User profile */}
             <div className="flex items-center gap-2 pl-2 ml-1 border-l border-lug-light-gray">
               <div className="w-6 h-6 rounded-full bg-lug-red flex items-center justify-center text-white text-[10px] font-semibold flex-shrink-0">
-                AU
+                {user?.username.slice(0,2).toUpperCase() ?? 'U'}
               </div>
               <div className="hidden sm:block text-xs leading-tight">
-                <p className="font-medium text-lug-charcoal">Admin User</p>
-                <p className="text-lug-gray text-[11px]">IT Administrator</p>
+                <p className="font-medium text-lug-charcoal">{user?.username}</p>
+                <button type="button" onClick={() => void logout()} className="text-lug-gray text-[11px] hover:text-lug-red">Sign out</button>
               </div>
             </div>
           </div>

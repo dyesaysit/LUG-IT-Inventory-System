@@ -5,6 +5,7 @@ import type {
   UpdateDepartmentInput,
 } from 'shared';
 import type { IDepartmentService } from '../services/DepartmentService';
+import { recordAudit } from '../services/audit-event';
 
 /** HTTP-facing operations for departments. */
 export class DepartmentController {
@@ -21,17 +22,17 @@ export class DepartmentController {
   }
 
   /** Creates a department. */
-  create(input: CreateDepartmentInput): Promise<Department> {
-    return this.service.create(input);
+  async create(input: CreateDepartmentInput): Promise<Department> {
+    const row=await this.service.create(input);await recordAudit('DEPARTMENT',row.id,'CREATE',`Created department ${row.code}`,null,row);return row;
   }
 
   /** Applies a partial department update. */
-  update(id: number, input: UpdateDepartmentInput): Promise<Department> {
-    return this.service.update(id, input);
+  async update(id: number, input: UpdateDepartmentInput): Promise<Department> {
+    const before=await this.service.getById(id);const row=await this.service.update(id,input);await recordAudit('DEPARTMENT',id,'UPDATE',`Updated department ${row.code}`,before,row);return row;
   }
 
   /** Soft-deletes a department. */
-  archive(id: number): Promise<void> {
-    return this.service.archive(id);
+  async archive(id: number): Promise<void> {
+    const before=await this.service.getById(id);await this.service.archive(id);await recordAudit('DEPARTMENT',id,'ARCHIVE',`Archived department ${before.code}`,before);
   }
 }

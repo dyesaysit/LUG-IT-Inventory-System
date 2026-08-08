@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
-
-const logoPath = '/LUG-logo-200x84-transparent.png';
+import { useAuth } from '../context/AuthContext';
+import { useApplicationSettings } from '../context/ApplicationSettingsContext';
 
 interface NavGroup {
   label: string;
@@ -11,9 +11,11 @@ interface NavItem {
   label: string;
   path: string;
   icon: React.ReactNode;
+  requiredPermission?: string;
 }
 
 const iconClass = 'w-3.5 h-3.5 flex-shrink-0';
+const permissionByPath: Record<string, string> = { '/dashboard':'dashboard.view','/assets':'assets.view','/assignments':'assignments.view','/people':'people.view','/departments':'departments.view','/locations':'locations.view','/maintenance':'maintenance.view','/repairs':'repairs.view','/tickets':'tickets.view','/equipment-requests':'requests.view','/reports':'reports.view','/audit-log':'audit.view','/users':'users.view','/settings':'settings.view' };
 
 const DashboardIcon = () => (
   <svg
@@ -161,6 +163,17 @@ const RepairsIcon = () => (
   </svg>
 );
 
+const TicketsIcon = () => (
+  <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.75}
+      d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 010 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 010-4V7a2 2 0 00-2-2H5z"
+    />
+  </svg>
+);
+
 const ReportsIcon = () => (
   <svg
     className={iconClass}
@@ -244,36 +257,60 @@ const navGroups: NavGroup[] = [
         icon: <MaintenanceIcon />,
       },
       { label: 'Repairs', path: '/repairs', icon: <RepairsIcon /> },
+      { label: 'Tickets', path: '/tickets', icon: <TicketsIcon /> },
       { label: 'Reports', path: '/reports', icon: <ReportsIcon /> },
     ],
   },
   {
     label: 'Administration',
     items: [
+      { label: 'Equipment requests', path: '/equipment-requests', icon: <TicketsIcon /> },
       { label: 'Audit log', path: '/audit-log', icon: <AuditIcon /> },
-      { label: 'Settings', path: '/settings', icon: <SettingsIcon /> },
+      { label: 'User management', path: '/users', icon: <PeopleIcon /> },
+      { label: 'Settings', path: '/settings', icon: <SettingsIcon />, requiredPermission: 'settings.view' },
     ],
   },
 ];
 
 /**
- * Desktop sidebar with compact logo area, grouped navigation, and thin active indicator.
+ * Desktop sidebar with white-label branding from ApplicationSettingsContext.
  */
 export function Sidebar() {
+  const { permissions } = useAuth();
+  const { settings } = useApplicationSettings();
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        const required = item.requiredPermission ?? permissionByPath[item.path];
+        return required ? permissions.includes(required) : false;
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
+
+  const logoUrl = settings?.logoUrl || '/LUG-logo-200x84-transparent.png';
+  const logoSize = settings?.logoDisplaySize ? `${parseInt(settings.logoDisplaySize, 10) * 0.25}px` : '1.75rem'; // scaling to match layout beautifully or relative h-7 size
+  const orgName = settings?.organizationName || 'Organization';
+  const sysName = settings?.systemName || 'IT Inventory System';
+  const sidebarTitle = settings?.organizationShortName
+    ? `${settings.organizationShortName} IT Inventory`
+    : 'IT Inventory';
+
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 bg-lug-charcoal z-30">
       {/* Logo area — compact */}
       <div className="px-4 py-4 border-b border-white/10">
         <div className="flex items-center gap-3">
           <img
-            src={logoPath}
-            alt="Lancaster University Ghana"
-            className="h-7 w-auto"
+            src={logoUrl}
+            alt={orgName}
+            className="w-auto object-contain"
+            style={{ height: logoSize }}
           />
           <div className="text-xs leading-tight">
-            <p className="font-semibold text-white">LUG IT Inventory</p>
+            <p className="font-semibold text-white">{sidebarTitle}</p>
             <p className="text-gray-400 text-[11px]">
-              Lancaster University Ghana
+              {orgName}
             </p>
           </div>
         </div>
@@ -282,7 +319,7 @@ export function Sidebar() {
       {/* Navigation */}
       <div className="flex-1 flex flex-col overflow-hidden">
         <nav className="flex-1 py-3 px-3 space-y-4 overflow-y-auto scrollbar-thin">
-          {navGroups.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.label}>
               <p className="px-3 mb-1 text-[11px] text-gray-500 select-none">
                 {group.label}
@@ -313,7 +350,7 @@ export function Sidebar() {
 
       {/* Footer */}
       <div className="px-4 py-2.5 border-t border-white/10 text-[11px] text-gray-500">
-        IT Inventory System
+        {sysName}
       </div>
     </aside>
   );

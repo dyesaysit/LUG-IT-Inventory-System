@@ -1,44 +1,50 @@
+import type { ReactNode } from 'react';
+
 interface DashboardCardProps {
   title: string;
   value: string;
   subtitle?: string;
-  /** Only used for status-context cards (available, warranty, maintenance) */
+  /** Status colour for the icon tint and (icon-less) status dot. */
   indicator?: 'green' | 'amber' | 'red';
+  /** Optional leading icon rendered in a colour-coded tile. */
+  icon?: ReactNode;
 }
 
-const indicatorStyles: Record<string, string> = {
+const dotStyles: Record<string, string> = {
   green: 'bg-emerald-500',
   amber: 'bg-amber-500',
   red: 'bg-red-500',
 };
 
+const tintStyles: Record<string, string> = {
+  green: 'bg-emerald-50 text-emerald-600',
+  amber: 'bg-amber-50 text-amber-600',
+  red: 'bg-red-50 text-red-600',
+};
+
 /**
- * Compact dashboard stat card with subtle border and optional status indicator.
- * Uses sentence case, no uppercase, restrained styling.
+ * Compact dashboard stat card with an optional colour-coded icon tile and
+ * status indicator. Restrained styling, sentence case.
  */
-export function DashboardCard({
-  title,
-  value,
-  subtitle,
-  indicator,
-}: DashboardCardProps) {
+export function DashboardCard({ title, value, subtitle, indicator, icon }: DashboardCardProps) {
+  const tint = indicator ? tintStyles[indicator] : 'bg-gray-100 text-lug-gray';
   return (
-    <div className="bg-white rounded border border-lug-light-gray px-4 py-3.5">
-      <div className="flex items-center gap-2 mb-1">
-        {indicator && (
-          <span
-            className={`w-2 h-2 rounded-full flex-shrink-0 ${indicatorStyles[indicator]}`}
-            aria-hidden="true"
-          />
-        )}
-        <p className="text-xs text-lug-gray">{title}</p>
-      </div>
-      <p className="text-xl font-semibold text-lug-charcoal tracking-tight">
-        {value}
-      </p>
-      {subtitle && (
-        <p className="text-xs text-lug-gray mt-1">{subtitle}</p>
+    <div className="flex items-start gap-3 rounded border border-lug-light-gray bg-white px-4 py-3.5">
+      {icon && (
+        <span className={`flex h-9 w-9 flex-shrink-0 items-center justify-center rounded ${tint}`} aria-hidden="true">
+          {icon}
+        </span>
       )}
+      <div className="min-w-0">
+        <div className="flex items-center gap-2">
+          {indicator && !icon && (
+            <span className={`h-2 w-2 flex-shrink-0 rounded-full ${dotStyles[indicator]}`} aria-hidden="true" />
+          )}
+          <p className="text-xs text-lug-gray">{title}</p>
+        </div>
+        <p className="mt-0.5 text-xl font-semibold tracking-tight text-lug-charcoal">{value}</p>
+        {subtitle && <p className="mt-0.5 truncate text-xs text-lug-gray">{subtitle}</p>}
+      </div>
     </div>
   );
 }

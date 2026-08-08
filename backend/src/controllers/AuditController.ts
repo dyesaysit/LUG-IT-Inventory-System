@@ -1,0 +1,1 @@
+import type { AuditLogQuery } from 'shared';import type { IAuditService } from '../services/AuditService';export class AuditController{constructor(private readonly s:IAuditService){}list(q:AuditLogQuery){return this.s.list(q);}get(id:number){return this.s.get(id);}entity(type:string,id:number){return this.s.entity(type,id);}summary(){return this.s.summary();}}

@@ -14,6 +14,14 @@ const envSchema = z.object({
     .enum(['error', 'warn', 'info', 'debug', 'silent'])
     .default('info'),
   APP_NAME: z.string().default('School IT Inventory System'),
+  SESSION_COOKIE_NAME: z.string().default('lug_session'),
+  SESSION_HOURS: z.coerce.number().int().positive().default(8),
+  SESSION_REMEMBER_DAYS: z.coerce.number().int().positive().default(14),
+  INITIAL_ADMIN_USERNAME: z.string().trim().min(1).optional(),
+  INITIAL_ADMIN_EMAIL: z.union([z.string().trim().email().max(254), z.literal('')]).optional(),
+  INITIAL_ADMIN_PASSWORD: z.string().optional(),
+  BACKUP_DIR: z.string().optional(),
+  BACKUP_DIRECTORY: z.string().optional(),
 });
 
 /** Parsed and validated environment variables. */

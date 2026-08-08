@@ -1,0 +1,6 @@
+export type AuditEntityType='ASSET'|'DEPARTMENT'|'PERSON'|'LOCATION'|'ASSIGNMENT'|'MAINTENANCE'|'REPAIR'|'SYSTEM';
+export type AuditAction='CREATE'|'UPDATE'|'DELETE'|'ARCHIVE'|'RESTORE'|'ASSIGN'|'RETURN'|'CHECKOUT'|'CHECKIN'|'LOGIN'|'LOGOUT'|'START'|'COMPLETE'|'APPROVE'|'REJECT'|'CANCEL';
+export interface AuditLog{id:number;entityType:AuditEntityType;entityId:number|null;action:AuditAction;performedBy:string|null;performedByName:string|null;performedAt:string;ipAddress:string|null;userAgent:string|null;previousValues:Record<string,unknown>|null;newValues:Record<string,unknown>|null;summary:string;success:boolean;createdAt:string;}
+export interface AuditLogQuery{search?:string;entityType?:AuditEntityType;action?:AuditAction;performedBy?:string;dateFrom?:string;dateTo?:string;success?:boolean;page?:number;pageSize?:number;sortBy?:'performedAt'|'entityType'|'action';sortOrder?:'asc'|'desc';}
+export interface CreateAuditLogInput{entityType:AuditEntityType;entityId?:number|null;action:AuditAction;performedBy?:string|null;performedByName?:string|null;ipAddress?:string|null;userAgent?:string|null;previousValues?:Record<string,unknown>|null;newValues?:Record<string,unknown>|null;summary:string;success?:boolean;}
+export interface AuditSummary{totalEvents:number;todayEvents:number;successfulEvents:number;failedEvents:number;}

@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { useEffect } from 'react';
-
-const logoPath = '/LUG-logo-200x84-transparent.png';
+import { useAuth } from '../context/AuthContext';
+import { useApplicationSettings } from '../context/ApplicationSettingsContext';
 
 interface MobileMenuProps {
   open: boolean;
@@ -17,9 +17,11 @@ interface NavItem {
   label: string;
   path: string;
   icon: React.ReactNode;
+  requiredPermission?: string;
 }
 
 const iconClass = 'w-3.5 h-3.5 flex-shrink-0';
+const permissionByPath: Record<string, string> = { '/dashboard':'dashboard.view','/assets':'assets.view','/assignments':'assignments.view','/people':'people.view','/departments':'departments.view','/locations':'locations.view','/maintenance':'maintenance.view','/repairs':'repairs.view','/tickets':'tickets.view','/equipment-requests':'requests.view','/reports':'reports.view','/audit-log':'audit.view','/users':'users.view','/settings':'settings.view' };
 
 const DashboardIcon = () => (
   <svg
@@ -167,6 +169,17 @@ const RepairsIcon = () => (
   </svg>
 );
 
+const TicketsIcon = () => (
+  <svg className={iconClass} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth={1.75}
+      d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 010 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 010-4V7a2 2 0 00-2-2H5z"
+    />
+  </svg>
+);
+
 const ReportsIcon = () => (
   <svg
     className={iconClass}
@@ -250,14 +263,17 @@ const navGroups: NavGroup[] = [
         icon: <MaintenanceIcon />,
       },
       { label: 'Repairs', path: '/repairs', icon: <RepairsIcon /> },
+      { label: 'Tickets', path: '/tickets', icon: <TicketsIcon /> },
       { label: 'Reports', path: '/reports', icon: <ReportsIcon /> },
     ],
   },
   {
     label: 'Administration',
     items: [
+      { label: 'Equipment requests', path: '/equipment-requests', icon: <TicketsIcon /> },
       { label: 'Audit log', path: '/audit-log', icon: <AuditIcon /> },
-      { label: 'Settings', path: '/settings', icon: <SettingsIcon /> },
+      { label: 'User management', path: '/users', icon: <PeopleIcon /> },
+      { label: 'Settings', path: '/settings', icon: <SettingsIcon />, requiredPermission: 'settings.view' },
     ],
   },
 ];
@@ -266,6 +282,18 @@ const navGroups: NavGroup[] = [
  * Slide-out mobile sidebar menu with overlay, grouped navigation, and compact header.
  */
 export function MobileMenu({ open, onClose }: MobileMenuProps) {
+  const { permissions } = useAuth();
+  const { settings } = useApplicationSettings();
+  const visibleGroups = navGroups
+    .map((group) => ({
+      ...group,
+      items: group.items.filter((item) => {
+        const required = item.requiredPermission ?? permissionByPath[item.path];
+        return required ? permissions.includes(required) : false;
+      }),
+    }))
+    .filter((group) => group.items.length > 0);
+
   useEffect(() => {
     if (open) {
       document.body.style.overflow = 'hidden';
@@ -298,13 +326,14 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
         <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/10">
           <div className="flex items-center gap-2.5">
             <img
-              src={logoPath}
-              alt="Lancaster University Ghana"
-              className="h-6 w-auto"
+              src={settings?.logoUrl || '/LUG-logo-200x84-transparent.png'}
+              alt={settings?.organizationName || 'Organization'}
+              className="w-auto object-contain"
+              style={{ height: settings?.logoDisplaySize ? `${parseInt(settings.logoDisplaySize, 10) * 0.2}px` : '1.5rem' }}
             />
             <div className="text-xs leading-tight">
-              <p className="font-semibold text-white">LUG IT Inventory</p>
-              <p className="text-gray-400 text-[11px]">Lancaster University Ghana</p>
+              <p className="font-semibold text-white">{settings?.organizationShortName ? `${settings.organizationShortName} IT Inventory` : 'IT Inventory'}</p>
+              <p className="text-gray-400 text-[11px]">{settings?.organizationName || 'IT Inventory'}</p>
             </div>
           </div>
           <button
@@ -331,7 +360,7 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
 
         {/* Navigation */}
         <nav className="flex-1 overflow-y-auto py-3 px-3 space-y-4">
-          {navGroups.map((group) => (
+          {visibleGroups.map((group) => (
             <div key={group.label}>
               <p className="px-3 mb-1 text-[11px] text-gray-500 select-none">
                 {group.label}

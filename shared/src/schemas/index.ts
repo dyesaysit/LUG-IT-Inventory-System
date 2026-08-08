@@ -4,6 +4,18 @@ import { z } from 'zod';
 
 export * from './Asset';
 export * from './Department';
+export * from './Person';
+export * from './Location';
+export * from './Assignment';
+export * from './Maintenance';
+export * from './Repair';
+export * from './Audit';
+export * from './Report';
+export * from './Auth';
+export * from './Settings';
+export * from './Backup';
+export * from './Portal';
+export * from './Ticket';
 
 /**
  * Generic query parameters for list endpoints.
