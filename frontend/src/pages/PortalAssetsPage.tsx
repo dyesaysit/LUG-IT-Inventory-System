@@ -64,7 +64,7 @@ export default function PortalAssetsPage() {
     try {
       const record = await reportAssetProblem({ assetId: reporting.assetId, faultDescription: fault.trim(), priority });
       setReporting(null);
-      setSuccess(`Reported to IT — maintenance ticket ${record.maintenanceNumber} was created.`);
+      setSuccess(`Reported to IT — ticket ${record.ticketNumber} was created.`);
     } catch (err) {
       setFormError(apiErrorMessage(err, 'Unable to report the problem. Please try again.'));
     } finally {
@@ -96,7 +96,7 @@ export default function PortalAssetsPage() {
         <div className="rounded border border-lug-light-gray bg-white px-6 py-14 text-center text-sm text-lug-gray">
           Loading your assets…
         </div>
-      ) : assets.length === 0 ? (
+      ) : !error && assets.length === 0 ? (
         profile?.personId !== null && (
           <div className="rounded border border-lug-light-gray bg-white px-6 py-14 text-center">
             <h2 className="text-base font-semibold text-lug-charcoal">No assets assigned to you</h2>

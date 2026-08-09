@@ -24,6 +24,8 @@ interface EquipmentRequestRow {
   updated_at: string;
   requested_by_name: string | null;
   requested_by_username: string | null;
+  fulfilled_asset_id: number | null;
+  fulfilled_asset_tag: string | null;
 }
 
 const mapRow = (row: EquipmentRequestRow): EquipmentRequest => ({
@@ -43,15 +45,21 @@ const mapRow = (row: EquipmentRequestRow): EquipmentRequest => ({
   updatedAt: row.updated_at,
   requestedByName: row.requested_by_name,
   requestedByUsername: row.requested_by_username,
+  fulfilledAssetId: row.fulfilled_asset_id,
+  fulfilledAssetTag: row.fulfilled_asset_tag,
 });
 
 const SELECT = `
   SELECT er.*,
     TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) AS requested_by_name,
-    u.username AS requested_by_username
+    u.username AS requested_by_username,
+    aa.asset_id AS fulfilled_asset_id,
+    a.asset_tag AS fulfilled_asset_tag
   FROM equipment_requests er
   LEFT JOIN people p ON p.id = er.requested_by_person_id
   LEFT JOIN users u ON u.id = er.requested_by_user_id
+  LEFT JOIN asset_assignments aa ON aa.id = er.fulfilment_assignment_id
+  LEFT JOIN assets a ON a.id = aa.asset_id
 `;
 
 /** Persistence contract for staff equipment requests. */

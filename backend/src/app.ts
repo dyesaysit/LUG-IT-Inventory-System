@@ -67,6 +67,9 @@ import { createEquipmentRequestRepository } from './repositories/EquipmentReques
 import { PortalService } from './services/PortalService';
 import { PortalController } from './controllers/PortalController';
 import { createPortalRouter } from './routes/portal.routes';
+import { createNotificationRouter } from './routes/notification.routes';
+import { NotificationRepository } from './repositories/NotificationRepository';
+import { NotificationService } from './services/NotificationService';
 import { createTicketRepository } from './repositories/TicketRepository';
 import { TicketService } from './services/TicketService';
 import { TicketController } from './controllers/TicketController';
@@ -125,14 +128,16 @@ export function createApp(config: EnvConfig): Express {
   const backupController = new BackupController(backupService);
   const equipmentRequestRepository = createEquipmentRequestRepository();
   const ticketRepository = createTicketRepository();
+  const notificationService = new NotificationService(new NotificationRepository());
+  const ticketService = new TicketService(ticketRepository, maintenanceService, repairService, notificationService);
   const portalController = new PortalController(
-    new PortalService(userRepository, assignmentService, ticketRepository, equipmentRequestRepository),
+    new PortalService(userRepository, assignmentService, ticketService, equipmentRequestRepository, notificationService),
   );
   const requestReviewController = new RequestReviewController(
-    new RequestReviewService(equipmentRequestRepository, assignmentService, auditService),
+    new RequestReviewService(equipmentRequestRepository, assignmentService, auditService, notificationService),
   );
   const ticketController = new TicketController(
-    new TicketService(ticketRepository, maintenanceService, repairService),
+    ticketService,
   );
 
 // Body parsing
@@ -170,6 +175,7 @@ export function createApp(config: EnvConfig): Express {
   app.use('/api/portal', createPortalRouter(portalController, authService));
   app.use('/api/equipment-requests', createEquipmentRequestRouter(requestReviewController, authService));
   app.use('/api/tickets', createTicketRouter(ticketController, authService));
+  app.use('/api/notifications', createNotificationRouter(notificationService, authService));
 
 // Serve frontend static files in production
   if (config.NODE_ENV === 'production') {

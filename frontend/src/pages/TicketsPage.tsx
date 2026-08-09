@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { InventoryAsset as Asset, Ticket, TicketPriority, TicketStatus } from 'shared';
+import type { InventoryAsset as Asset, Ticket, TicketCategory, TicketPriority, TicketStatus } from 'shared';
 import {
   assignTicket,
   cancelTicket,
@@ -16,6 +16,7 @@ import { useAuth } from '../context/AuthContext';
 import { apiErrorMessage } from '../utils/api-error';
 
 const PRIORITIES: TicketPriority[] = ['LOW', 'MEDIUM', 'HIGH', 'CRITICAL'];
+const CATEGORIES: TicketCategory[] = ['DEVICE', 'NETWORK', 'ACCOUNT', 'SOFTWARE', 'ACCESS', 'OTHER'];
 const STATUSES: TicketStatus[] = ['NEW', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED', 'CANCELLED'];
 const label = (value: string) => value.toLowerCase().replaceAll('_', ' ').replace(/^./, (c) => c.toUpperCase());
 const formatDate = (value: string | null | undefined): string => {
@@ -47,8 +48,9 @@ export default function TicketsPage() {
   const [status, setStatus] = useState('');
 
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ title: '', description: '', assetId: '', priority: 'MEDIUM' as TicketPriority });
+  const [form, setForm] = useState({ title: '', description: '', assetId: '', category: 'OTHER' as TicketCategory, priority: 'MEDIUM' as TicketPriority });
   const [action, setAction] = useState<Action | null>(null);
+  const [details, setDetails] = useState<Ticket | null>(null);
   const [actionText, setActionText] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -121,11 +123,12 @@ export default function TicketsPage() {
         description: form.description.trim() || null,
         assetId: form.assetId ? Number(form.assetId) : null,
         priority: form.priority,
+        category: form.category,
       });
       setTickets((current) => [created, ...current]);
       setSummary(await fetchTicketSummary());
       setAdding(false);
-      setForm({ title: '', description: '', assetId: '', priority: 'MEDIUM' });
+      setForm({ title: '', description: '', assetId: '', category: 'OTHER', priority: 'MEDIUM' });
       setSuccess(`Ticket ${created.ticketNumber} was created.`);
     } catch (err) {
       setError(apiErrorMessage(err, 'Unable to create the ticket.'));
@@ -221,13 +224,16 @@ export default function TicketsPage() {
           <div className="overflow-x-auto">
             <table className="min-w-full text-left text-sm">
               <thead className="border-b border-lug-light-gray bg-gray-50 text-xs text-lug-gray">
-                <tr>{['Ticket', 'Title', 'Asset', 'Priority', 'Status', 'Assigned to', 'Linked job', 'Created', 'Actions'].map((h) => <th key={h} className="px-4 py-3 font-medium">{h}</th>)}</tr>
+                <tr>{['Ticket', 'Requester', 'Department', 'Title', 'Category', 'Asset', 'Priority', 'Status', 'Assigned technician', 'Linked job', 'Submitted', 'Actions'].map((h) => <th key={h} className="px-4 py-3 font-medium">{h}</th>)}</tr>
               </thead>
               <tbody className="divide-y divide-lug-light-gray">
                 {visible.map((ticket) => (
                   <tr key={ticket.id} className="hover:bg-gray-50/60">
                     <td className="whitespace-nowrap px-4 py-3 font-medium text-lug-charcoal">{ticket.ticketNumber}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{ticket.requesterName || ticket.requesterUsername || 'â€”'}</td>
+                    <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{ticket.departmentName || 'â€”'}</td>
                     <td className="px-4 py-3"><p className="text-lug-charcoal">{ticket.title}</p></td>
+                    <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{label(ticket.category)}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{ticket.assetTag ?? '—'}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{label(ticket.priority)}</td>
                     <td className="whitespace-nowrap px-4 py-3"><span className={`rounded border px-2 py-1 text-xs ${STATUS_STYLE[ticket.status]}`}>{label(ticket.status)}</span></td>
@@ -236,6 +242,7 @@ export default function TicketsPage() {
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{formatDate(ticket.createdAt)}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <div className="inline-flex flex-wrap gap-3">
+                        <button type="button" onClick={() => setDetails(ticket)} className="text-lug-gray hover:text-lug-charcoal">View</button>
                         {ticket.status === 'NEW' && hasPermission('tickets.update') && (
                           <button type="button" disabled={busy} onClick={() => openAction(ticket, 'assign')} className="text-lug-red hover:underline disabled:opacity-50">Assign</button>
                         )}
@@ -269,6 +276,8 @@ export default function TicketsPage() {
         )}
       </section>
 
+      {details && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDetails(null)}><div className="w-full max-w-lg space-y-4 rounded bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}><div><h2 className="text-lg font-semibold">{details.ticketNumber}: {details.title}</h2><p className="mt-1 text-sm text-lug-gray">{details.requesterName || details.requesterUsername || 'Unknown requester'} · {details.departmentName || 'No department'}</p></div><dl className="grid grid-cols-2 gap-3 text-sm"><div><dt className="text-lug-gray">Category</dt><dd>{label(details.category)}</dd></div><div><dt className="text-lug-gray">Status</dt><dd>{label(details.status)}</dd></div><div><dt className="text-lug-gray">Asset</dt><dd>{details.assetTag || 'None'}</dd></div><div><dt className="text-lug-gray">Assigned technician</dt><dd>{details.assignedTo || 'Unassigned'}</dd></div><div className="col-span-2"><dt className="text-lug-gray">Description</dt><dd className="whitespace-pre-wrap">{details.description || 'No description'}</dd></div></dl><div className="flex justify-end border-t pt-4"><button type="button" onClick={() => setDetails(null)} className="rounded border px-4 py-2 text-sm">Close</button></div></div></div>}
+
       {adding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">
           <form onSubmit={(e) => void submitCreate(e)} className="w-full max-w-lg space-y-4 rounded bg-white p-6 shadow-xl">
@@ -280,6 +289,11 @@ export default function TicketsPage() {
               <textarea rows={3} value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={inputClasses} />
             </label>
             <div className="grid gap-4 sm:grid-cols-2">
+              <label className="block text-sm font-medium text-lug-charcoal">Category
+                <select value={form.category} onChange={(e) => setForm({ ...form, category: e.target.value as TicketCategory })} className={inputClasses}>
+                  {CATEGORIES.map((category) => <option key={category} value={category}>{label(category)}</option>)}
+                </select>
+              </label>
               <label className="block text-sm font-medium text-lug-charcoal">Related asset
                 <select value={form.assetId} onChange={(e) => setForm({ ...form, assetId: e.target.value })} className={inputClasses}>
                   <option value="">None</option>

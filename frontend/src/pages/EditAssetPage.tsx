@@ -91,18 +91,18 @@ function assetToForm(a: Asset): FormState {
 function formToUpdateAsset(form: FormState): UpdateAssetInput {
   return {
     assetTag: form.assetTag,
-    serialNumber: form.serialNumber || undefined,
+    serialNumber: form.serialNumber || null,
     categoryId: Number(form.categoryId),
     manufacturer: form.manufacturer,
     model: form.model,
-    description: form.description || undefined,
-    purchaseDate: form.purchaseDate || undefined,
-    purchaseCost: form.purchaseCost.trim() === '' ? undefined : Number(form.purchaseCost),
-    warrantyExpiryDate: form.warrantyExpiryDate || undefined,
+    description: form.description,
+    purchaseDate: form.purchaseDate || null,
+    purchaseCost: form.purchaseCost.trim() === '' ? null : Number(form.purchaseCost),
+    warrantyExpiryDate: form.warrantyExpiryDate || null,
     condition: form.condition,
     status: form.status,
     currentLocationId: Number(form.currentLocationId),
-    notes: form.notes || undefined,
+    notes: form.notes,
   };
 }
 
@@ -328,7 +328,7 @@ const EditAssetPage = () => {
                 type="number"
                 step="0.01"
                 min="0"
-                className={`${inputStyle} pl-8`}
+                className={`${inputStyle} pl-14`}
                 value={form.purchaseCost}
                 onChange={(e) => handleFieldChange('purchaseCost', e.target.value)}
                 placeholder="0.00"

@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "scripts": {
     "build": "tsc",
+    "predev": "npm --prefix ../shared run build",
     "dev": "nodemon src/server.ts",
     "start": "node src/server.ts",
+    "pretypecheck": "npm --prefix ../shared run build",
     "typecheck": "tsc --noEmit",
-    "test": "node --test -r ts-node/register src/tests/DepartmentService.test.ts src/tests/PersonService.test.ts src/tests/LocationService.test.ts src/tests/AssignmentService.test.ts src/tests/MaintenanceService.test.ts src/tests/RepairService.test.ts src/tests/AuditService.test.ts src/tests/AuthService.test.ts src/tests/PasswordSchema.test.ts src/tests/SettingsService.test.ts src/tests/BackupService.test.ts src/tests/ReportService.test.ts",
+    "test": "node --test -r ts-node/register src/tests/DepartmentService.test.ts src/tests/PersonService.test.ts src/tests/LocationService.test.ts src/tests/AssignmentService.test.ts src/tests/MaintenanceService.test.ts src/tests/RepairService.test.ts src/tests/AuditService.test.ts src/tests/AuthService.test.ts src/tests/PasswordSchema.test.ts src/tests/SettingsService.test.ts src/tests/BackupService.test.ts src/tests/ReportService.test.ts src/tests/TicketOwnership.test.ts",
     "auth:reset-admin": "ts-node src/scripts/reset-admin-password.ts"
   },
   "dependencies": {

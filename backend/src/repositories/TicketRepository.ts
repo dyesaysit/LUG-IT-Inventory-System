@@ -9,6 +9,7 @@ interface TicketRow {
   description: string | null;
   asset_id: number | null;
   priority: Ticket['priority'];
+  category: Ticket['category'];
   status: TicketStatus;
   assigned_to: string | null;
   reported_by_user_id: number | null;
@@ -24,6 +25,9 @@ interface TicketRow {
   asset_model: string | null;
   maintenance_number: string | null;
   repair_number: string | null;
+  requester_name: string | null;
+  requester_username: string | null;
+  department_name: string | null;
 }
 
 const mapRow = (row: TicketRow): Ticket => ({
@@ -33,6 +37,7 @@ const mapRow = (row: TicketRow): Ticket => ({
   description: row.description,
   assetId: row.asset_id,
   priority: row.priority,
+  category: row.category,
   status: row.status,
   assignedTo: row.assigned_to,
   reportedByUserId: row.reported_by_user_id,
@@ -48,22 +53,30 @@ const mapRow = (row: TicketRow): Ticket => ({
   assetModel: row.asset_model,
   maintenanceNumber: row.maintenance_number,
   repairNumber: row.repair_number,
+  requesterName: row.requester_name,
+  requesterUsername: row.requester_username,
+  departmentName: row.department_name,
 });
 
 const SELECT = `
   SELECT t.*, a.asset_tag AS asset_tag, a.manufacturer AS asset_manufacturer, a.model AS asset_model,
-         m.maintenance_number AS maintenance_number, r.repair_number AS repair_number
+         m.maintenance_number AS maintenance_number, r.repair_number AS repair_number,
+         TRIM(COALESCE(p.first_name, '') || ' ' || COALESCE(p.last_name, '')) AS requester_name,
+         u.username AS requester_username, d.name AS department_name
   FROM tickets t
   LEFT JOIN assets a ON a.id = t.asset_id
   LEFT JOIN maintenance_records m ON m.id = t.maintenance_record_id
   LEFT JOIN repair_jobs r ON r.id = t.repair_job_id
+  LEFT JOIN users u ON u.id = t.reported_by_user_id
+  LEFT JOIN people p ON p.id = t.reported_by_person_id
+  LEFT JOIN departments d ON d.id = p.department_id
 `;
 
 export interface ITicketRepository {
   list(query: TicketListQuery): Promise<Ticket[]>;
   summary(): Promise<TicketSummary>;
   getById(id: number): Promise<Ticket | null>;
-  listByUser(userId: number): Promise<Ticket[]>;
+  listByOwner(userId: number, personId: number | null): Promise<Ticket[]>;
   create(input: CreateTicketInput, reportedByUserId: number | null, reportedByPersonId: number | null): Promise<Ticket>;
   assign(id: number, assignedTo: string): Promise<Ticket>;
   start(id: number): Promise<Ticket>;
@@ -134,10 +147,13 @@ export class TicketRepository implements ITicketRepository {
     return row ? mapRow(row) : null;
   }
 
-  async listByUser(userId: number): Promise<Ticket[]> {
+  async listByOwner(userId: number, personId: number | null): Promise<Ticket[]> {
     const rows = this.db
-      .prepare(`${SELECT} WHERE t.reported_by_user_id = ? ORDER BY t.created_at DESC, t.id DESC`)
-      .all(userId) as TicketRow[];
+      .prepare(`${SELECT}
+        WHERE t.reported_by_user_id = @userId
+           OR (@personId IS NOT NULL AND t.reported_by_person_id = @personId)
+        ORDER BY t.created_at DESC, t.id DESC`)
+      .all({ userId, personId }) as TicketRow[];
     return rows.map(mapRow);
   }
 
@@ -153,8 +169,8 @@ export class TicketRepository implements ITicketRepository {
       return Number(
         this.db
           .prepare(`
-            INSERT INTO tickets (ticket_number, title, description, asset_id, priority, reported_by_user_id, reported_by_person_id)
-            VALUES (@number, @title, @description, @assetId, @priority, @userId, @personId)
+            INSERT INTO tickets (ticket_number, title, description, asset_id, priority, category, reported_by_user_id, reported_by_person_id)
+            VALUES (@number, @title, @description, @assetId, @priority, @category, @userId, @personId)
           `)
           .run({
             number,
@@ -162,6 +178,7 @@ export class TicketRepository implements ITicketRepository {
             description: input.description?.trim() || null,
             assetId: input.assetId ?? null,
             priority: input.priority ?? 'MEDIUM',
+            category: input.category,
             userId: reportedByUserId,
             personId: reportedByPersonId,
           }).lastInsertRowid,

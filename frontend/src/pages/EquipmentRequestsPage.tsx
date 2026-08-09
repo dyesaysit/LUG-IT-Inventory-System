@@ -14,6 +14,9 @@ import { apiErrorMessage } from '../utils/api-error';
 const STATUSES: EquipmentRequestStatus[] = ['PENDING', 'APPROVED', 'REJECTED', 'FULFILLED', 'CANCELLED'];
 const PAGE_SIZE = 20;
 const label = (value: string) => value.toLowerCase().replaceAll('_', ' ').replace(/^./, (c) => c.toUpperCase());
+const requestStatusLabel = (request: EquipmentRequest) => request.status === 'PENDING'
+  ? request.reviewedAt ? 'Needs information' : 'Submitted'
+  : label(request.status);
 const formatDate = (value: string | null | undefined): string => {
   if (!value) return '—';
   const date = new Date(value.includes('T') ? value : `${value.replace(' ', 'T')}Z`);
@@ -225,7 +228,7 @@ export default function EquipmentRequestsPage() {
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{request.requestedByName || request.requestedByUsername || '—'}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{request.quantity}</td>
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{request.category ?? '—'}</td>
-                    <td className="whitespace-nowrap px-4 py-3"><span className={`rounded border px-2 py-1 text-xs ${STATUS_STYLE[request.status]}`}>{label(request.status)}</span></td>
+                    <td className="whitespace-nowrap px-4 py-3"><span className={`rounded border px-2 py-1 text-xs ${STATUS_STYLE[request.status]}`}>{requestStatusLabel(request)}</span></td>
                     <td className="whitespace-nowrap px-4 py-3 text-lug-gray">{formatDate(request.createdAt)}</td>
                     <td className="whitespace-nowrap px-4 py-3">
                       <div className="inline-flex flex-wrap gap-3">
@@ -258,7 +261,7 @@ export default function EquipmentRequestsPage() {
                 <h2 className="text-lg font-semibold text-lug-charcoal">{details.itemName}</h2>
                 <p className="mt-1 text-sm text-lug-gray">Requested {formatDate(details.createdAt)}</p>
               </div>
-              <span className={`rounded border px-2 py-1 text-xs ${STATUS_STYLE[details.status]}`}>{label(details.status)}</span>
+              <span className={`rounded border px-2 py-1 text-xs ${STATUS_STYLE[details.status]}`}>{requestStatusLabel(details)}</span>
             </div>
             <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
               <div><dt className="text-lug-gray">Requester</dt><dd className="text-lug-charcoal">{details.requestedByName || details.requestedByUsername || '—'}</dd></div>

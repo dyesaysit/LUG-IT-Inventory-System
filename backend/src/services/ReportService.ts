@@ -441,10 +441,13 @@ export class ReportService {
 
 <div class="screen-controls">
   <button onclick="window.print()">Print / Save as PDF</button>
-  <button class="secondary" onclick="window.history.back()">← Back to Reports</button>
+  <button class="secondary" onclick="window.location.href='__REPORTS_URL__'">← Back to Reports</button>
 </div>
 
 <header class="print-header">
+  <div class="logo-cell">
+    <img src="${escapeHtml(profile.logoUrl || '/LUG-logo-200x84-transparent.png')}" alt="${escapeHtml(profile.organizationName)} logo">
+  </div>
   <div class="org-info">
     <div class="org-name">${escapeHtml(profile.organizationName)}</div>
     <div class="org-dept">${escapeHtml(profile.departmentName)}</div>

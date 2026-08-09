@@ -9,6 +9,7 @@ import { AppError } from '../middleware/errorHandler';
 import type { IEquipmentRequestRepository } from '../repositories/EquipmentRequestRepository';
 import type { IAssignmentService } from './AssignmentService';
 import type { IAuditService } from './AuditService';
+import type { NotificationService } from './NotificationService';
 
 /** Identifies the administrator performing a review action, for audit trails. */
 export interface Reviewer {
@@ -29,6 +30,7 @@ export class RequestReviewService {
     private readonly requests: IEquipmentRequestRepository,
     private readonly assignments: IAssignmentService,
     private readonly audit: IAuditService,
+    private readonly notifications: NotificationService,
   ) {}
 
   async list(query: EquipmentRequestListQuery): Promise<EquipmentRequest[]> {
@@ -49,6 +51,7 @@ export class RequestReviewService {
     const notes = clean(ReviewRequestInputSchema.parse(input).notes);
     const updated = await this.requests.review(id, 'APPROVED', notes, reviewer.username);
     await this.recordAudit(updated, 'APPROVE', `Approved equipment request "${request.itemName}"`, request, reviewer);
+    this.notifyRequester(updated, 'REQUEST_APPROVED', 'Equipment request approved', this.withUserNote(`Your request for ${updated.itemName} was approved.`, notes));
     return updated;
   }
 
@@ -60,6 +63,7 @@ export class RequestReviewService {
     const notes = clean(ReviewRequestInputSchema.parse(input).notes);
     const updated = await this.requests.review(id, 'REJECTED', notes, reviewer.username);
     await this.recordAudit(updated, 'REJECT', `Rejected equipment request "${request.itemName}"`, request, reviewer);
+    this.notifyRequester(updated, 'REQUEST_REJECTED', 'Equipment request rejected', this.withUserNote(`Your request for ${updated.itemName} was not approved.`, notes));
     return updated;
   }
 
@@ -80,6 +84,7 @@ export class RequestReviewService {
       request,
       reviewer,
     );
+    this.notifyRequester(updated, 'REQUEST_INFORMATION', 'More information required', this.withUserNote(`IT needs more information about your request for ${updated.itemName}.`, notes));
     return updated;
   }
 
@@ -112,6 +117,7 @@ export class RequestReviewService {
       request,
       reviewer,
     );
+    this.notifyRequester(updated, 'REQUEST_FULFILLED', 'Equipment request fulfilled', this.withUserNote(`Your request for ${updated.itemName} has been fulfilled.`, clean(parsed.notes)));
     return updated;
   }
 
@@ -132,5 +138,11 @@ export class RequestReviewService {
       newValues: { status: request.status, reviewNotes: request.reviewNotes },
       summary,
     });
+  }
+
+  private notifyRequester(request:EquipmentRequest,type:string,title:string,message:string):void{this.notifications.notifyUser(request.requestedByUserId,{type,title,message,entityType:'EQUIPMENT_REQUEST',entityId:request.id})}
+
+  private withUserNote(message: string, note: string | null): string {
+    return note ? `${message}\n\nIT message: ${note}` : message;
   }
 }

@@ -22,6 +22,7 @@ import PortalAssetsPage from './pages/PortalAssetsPage';
 import PortalRequestsPage from './pages/PortalRequestsPage';
 import PortalTicketsPage from './pages/PortalTicketsPage';
 import PortalProfilePage from './pages/PortalProfilePage';
+import NotificationHistoryPage from './pages/NotificationHistoryPage';
 
 const MaintenancePage = lazy(() => import('./pages/MaintenancePage'));
 const RepairsPage = lazy(() => import('./pages/RepairsPage'));
@@ -62,6 +63,7 @@ export default function App() {
               </Route>
             </Route>
             <Route path="/change-password" element={<ChangePasswordPage />} />
+            <Route path="/notifications" element={<NotificationHistoryPage />} />
             <Route element={<MainLayout />}>
               <Route element={<RequirePermission permission="dashboard.view" />}><Route path="/dashboard" element={<DashboardPage />} /></Route>
               <Route element={<RequirePermission permission="assets.view" />}><Route path="/assets" element={<AssetsPage />} /><Route path="/assets/:id/edit" element={<EditAssetPage />} /></Route>

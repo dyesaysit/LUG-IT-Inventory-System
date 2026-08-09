@@ -3,6 +3,7 @@ export type TicketStatus = 'NEW' | 'ASSIGNED' | 'IN_PROGRESS' | 'COMPLETED' | 'C
 
 /** Ticket priority. */
 export type TicketPriority = 'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL';
+export type TicketCategory = 'DEVICE' | 'NETWORK' | 'ACCOUNT' | 'SOFTWARE' | 'ACCESS' | 'OTHER';
 
 /** An IT support ticket. Work is carried out via linked maintenance/repair jobs. */
 export interface Ticket {
@@ -12,6 +13,7 @@ export interface Ticket {
   description: string | null;
   assetId: number | null;
   priority: TicketPriority;
+  category: TicketCategory;
   status: TicketStatus;
   assignedTo: string | null;
   reportedByUserId: number | null;
@@ -28,6 +30,9 @@ export interface Ticket {
   assetModel: string | null;
   maintenanceNumber: string | null;
   repairNumber: string | null;
+  requesterName: string | null;
+  requesterUsername: string | null;
+  departmentName: string | null;
 }
 
 export interface CreateTicketInput {
@@ -35,6 +40,7 @@ export interface CreateTicketInput {
   description?: string | null;
   assetId?: number | null;
   priority?: TicketPriority;
+  category: TicketCategory;
 }
 
 export interface AssignTicketInput {

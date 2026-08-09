@@ -6,11 +6,13 @@ import { apiErrorMessage } from '../utils/api-error';
 interface ReturnFormProps {
   assignment: AssetAssignment; locations: Location[];
   onCancel: () => void; onSuccess: () => void;
+  actionLabel?: string;
 }
 const today = new Date().toISOString().slice(0, 10);
 
 /** Records an asset return and optional asset updates. */
-export function ReturnAssignmentForm({ assignment, locations, onCancel, onSuccess }: ReturnFormProps) {
+export function ReturnAssignmentForm({ assignment, locations, onCancel, onSuccess, actionLabel }: ReturnFormProps) {
+  const submitLabel = actionLabel ?? (assignment.assignmentType === 'PERSON' ? 'Recall asset' : 'Return asset');
   const [returnedDate, setReturnedDate] = useState(today);
   const [returnLocationId, setReturnLocationId] = useState('');
   const [condition, setCondition] = useState<Asset['condition']>('GOOD');
@@ -36,6 +38,6 @@ export function ReturnAssignmentForm({ assignment, locations, onCancel, onSucces
     {error && <div className="rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">{error}</div>}
     <div className="grid gap-4 sm:grid-cols-2"><label className="text-sm font-medium">Return date<span className="text-lug-red"> *</span><input type="date" min={assignment.assignedDate} required value={returnedDate} onChange={(event) => setReturnedDate(event.target.value)} className="mt-1 w-full rounded border px-3 py-2 font-normal" /></label><label className="text-sm font-medium">Return location<select value={returnLocationId} onChange={(event) => setReturnLocationId(event.target.value)} className="mt-1 w-full rounded border px-3 py-2 font-normal"><option value="">Keep current location</option>{locations.map((location) => <option key={location.id} value={location.id}>{location.code} — {location.name}</option>)}</select></label><label className="text-sm font-medium">Condition on return<select value={condition} onChange={(event) => setCondition(event.target.value as Asset['condition'])} className="mt-1 w-full rounded border px-3 py-2 font-normal">{['NEW','GOOD','FAIR','POOR','DAMAGED'].map((value) => <option key={value}>{value}</option>)}</select></label><label className="text-sm font-medium">Returned by<input value={returnedBy} onChange={(event) => setReturnedBy(event.target.value)} className="mt-1 w-full rounded border px-3 py-2 font-normal" /></label></div>
     <label className="block text-sm font-medium">Return notes<textarea rows={3} value={returnNotes} onChange={(event) => setReturnNotes(event.target.value)} className="mt-1 w-full rounded border px-3 py-2 font-normal" /></label>
-    <div className="flex justify-end gap-3 border-t pt-4"><button type="button" onClick={onCancel} disabled={submitting} className="rounded border px-4 py-2 text-sm">Cancel</button><button type="submit" disabled={submitting} className="rounded bg-lug-red px-4 py-2 text-sm text-white disabled:opacity-60">{submitting ? 'Returning…' : 'Return asset'}</button></div>
+    <div className="flex justify-end gap-3 border-t pt-4"><button type="button" onClick={onCancel} disabled={submitting} className="rounded border px-4 py-2 text-sm">Cancel</button><button type="submit" disabled={submitting} className="rounded bg-lug-red px-4 py-2 text-sm text-white disabled:opacity-60">{submitting ? 'Processing…' : submitLabel}</button></div>
   </form>;
 }

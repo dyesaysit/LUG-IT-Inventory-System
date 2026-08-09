@@ -11,7 +11,9 @@ const STATUS_STYLES: Record<EquipmentRequestStatus, string> = {
   FULFILLED: 'border-blue-200 bg-blue-50 text-blue-700',
   CANCELLED: 'border-gray-200 bg-gray-50 text-gray-600',
 };
-const statusLabel = (s: string) => s.charAt(0) + s.slice(1).toLowerCase();
+const statusLabel = (request: EquipmentRequest) => request.status === 'PENDING'
+  ? request.reviewedAt ? 'Needs information' : 'Under review'
+  : request.status.charAt(0) + request.status.slice(1).toLowerCase();
 
 /** Staff portal: request new equipment and track the status and history of requests. */
 export default function PortalRequestsPage() {
@@ -171,7 +173,7 @@ export default function PortalRequestsPage() {
         </div>
         {loading ? (
           <p className="px-6 py-12 text-center text-sm text-lug-gray">Loading your requests…</p>
-        ) : requests.length === 0 ? (
+        ) : !error && requests.length === 0 ? (
           <p className="px-6 py-12 text-center text-sm text-lug-gray">You have not made any requests yet.</p>
         ) : (
           <ul className="divide-y divide-lug-light-gray">
@@ -191,10 +193,11 @@ export default function PortalRequestsPage() {
                       <span className="font-medium">IT note:</span> {request.reviewNotes}
                     </p>
                   )}
+                  {request.fulfilledAssetTag && <p className="mt-1 text-sm text-blue-700"><span className="font-medium">Assigned asset:</span> {request.fulfilledAssetTag}</p>}
                 </div>
                 <div className="flex flex-shrink-0 flex-col items-end gap-2">
                   <span className={`rounded border px-2 py-1 text-xs ${STATUS_STYLES[request.status]}`}>
-                    {statusLabel(request.status)}
+                    {statusLabel(request)}
                   </span>
                   {request.status === 'PENDING' && (
                     <button

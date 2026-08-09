@@ -1,4 +1,4 @@
-import type { CreateEquipmentRequestInput, ReportProblemInput } from 'shared';
+import type { CreateEquipmentRequestInput, CreateTicketInput, ReportProblemInput } from 'shared';
 import type { PortalService } from '../services/PortalService';
 
 /** Controller for the staff self-service portal. All actions are scoped to the caller. */
@@ -19,6 +19,10 @@ export class PortalController {
 
   tickets(userId: number) {
     return this.portal.getMyTickets(userId);
+  }
+
+  createTicket(userId: number, input: CreateTicketInput) {
+    return this.portal.createTicket(userId, input);
   }
 
   requests(userId: number) {

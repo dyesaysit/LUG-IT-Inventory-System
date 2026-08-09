@@ -7,6 +7,7 @@ export const CreateTicketInputSchema = z.object({
   description: optionalText(2000),
   assetId: z.coerce.number().int().positive().nullable().optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'CRITICAL']).default('MEDIUM'),
+  category: z.enum(['DEVICE', 'NETWORK', 'ACCOUNT', 'SOFTWARE', 'ACCESS', 'OTHER']),
 });
 
 export const AssignTicketInputSchema = z.object({

@@ -1,6 +1,7 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useApplicationSettings } from '../context/ApplicationSettingsContext';
+import { UnreadNotificationBell } from '../components/UnreadNotificationBell';
 
 const navItems = [
   { to: '/portal', label: 'My Assets / Report Issue', end: true },
@@ -42,6 +43,7 @@ export function PortalLayout() {
               </button>
             )}
             <span className="hidden text-sm text-lug-charcoal sm:inline">{user?.username}</span>
+            <UnreadNotificationBell />
             <button
               type="button"
               onClick={() => void handleLogout()}

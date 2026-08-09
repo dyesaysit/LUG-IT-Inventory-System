@@ -85,6 +85,8 @@ import type {
   UpdateUserInput,
   User,
   UserListQuery,
+  Notification,
+  NotificationListQuery,
 } from 'shared';
 
 /**
@@ -155,6 +157,8 @@ export const reportAssetProblem = async (input: ReportProblemInput): Promise<Tic
   (await api.post<Ticket>('/portal/problems', input)).data;
 export const fetchMyTickets = async (): Promise<Ticket[]> =>
   (await api.get<Ticket[]>('/portal/tickets')).data;
+export const createPortalTicket = async (input: CreateTicketInput): Promise<Ticket> =>
+  (await api.post<Ticket>('/portal/tickets', input)).data;
 export const fetchMyRequests = async (): Promise<EquipmentRequest[]> =>
   (await api.get<EquipmentRequest[]>('/portal/requests')).data;
 export const createEquipmentRequest = async (input: CreateEquipmentRequestInput): Promise<EquipmentRequest> =>
@@ -198,6 +202,10 @@ export const closeTicket = async (id: number): Promise<Ticket> =>
 export const cancelTicket = async (id: number): Promise<Ticket> =>
   (await api.post<Ticket>(`/tickets/${id}/cancel`)).data;
 export const fetchPermissions = async (): Promise<Permission[]> => (await api.get<Permission[]>('/permissions')).data;
+export const fetchNotifications = async (query:NotificationListQuery={}):Promise<Notification[]> => (await api.get<Notification[]>('/notifications',{params:query})).data;
+export const fetchUnreadNotificationCount = async ():Promise<number> => (await api.get<{count:number}>('/notifications/unread-count')).data.count;
+export const markNotificationRead = async (id:number):Promise<Notification> => (await api.post<Notification>(`/notifications/${id}/read`)).data;
+export const markAllNotificationsRead = async ():Promise<void> => { await api.post('/notifications/read-all'); };
 
 interface AssetApiResponse {
   id: number;
@@ -597,7 +605,20 @@ export const fetchLocationReport=(filter:ReportFilter):Promise<ReportResult>=>re
 export const fetchPeopleReport=(filter:ReportFilter):Promise<ReportResult>=>report('people',filter);
 export const fetchAuditReport=(filter:ReportFilter):Promise<ReportResult>=>report('audit',filter);
 /** Downloads CSV/XLSX or opens the print-ready HTML report. */
-export const exportReport=async(reportType:ReportType,format:Exclude<ReportFormat,'JSON'>,filter:ReportFilter):Promise<void>=>{const response=await api.get<Blob>(`${REPORTS_ENDPOINT}/export`,{params:{...filter,reportType,format},responseType:'blob'});const url=URL.createObjectURL(response.data);if(format==='PDF_PRINT'){window.open(url,'_blank','noopener,noreferrer');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}const disposition=response.headers['content-disposition'] as string|undefined;const filename=disposition?.match(/filename="([^"]+)"/)?.[1]??`${reportType.toLowerCase()}.${format.toLowerCase()}`;const link=document.createElement('a');link.href=url;link.download=filename;link.click();URL.revokeObjectURL(url);};
+export const exportReport=async(reportType:ReportType,format:Exclude<ReportFormat,'JSON'>,filter:ReportFilter):Promise<void>=>{
+  const response=await api.get<Blob>(`${REPORTS_ENDPOINT}/export`,{params:{...filter,reportType,format},responseType:'blob'});
+  let reportBlob=response.data;
+  if(format==='PDF_PRINT'){
+    const origin=window.location.origin;
+    const html=(await response.data.text()).replaceAll('__REPORTS_URL__',`${origin}/reports`).replaceAll('src="/','src="'+origin+'/');
+    reportBlob=new Blob([html],{type:'text/html;charset=utf-8'});
+  }
+  const url=URL.createObjectURL(reportBlob);
+  if(format==='PDF_PRINT'){window.open(url,'_blank','noopener,noreferrer');setTimeout(()=>URL.revokeObjectURL(url),60000);return;}
+  const disposition=response.headers['content-disposition'] as string|undefined;
+  const filename=disposition?.match(/filename="([^"]+)"/)?.[1]??`${reportType.toLowerCase()}.${format.toLowerCase()}`;
+  const link=document.createElement('a');link.href=url;link.download=filename;link.click();URL.revokeObjectURL(url);
+};
 
 const SETTINGS_ENDPOINT = '/settings';
 const BACKUPS_ENDPOINT = '/settings/backups';

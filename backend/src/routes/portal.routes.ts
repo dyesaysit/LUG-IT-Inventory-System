@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import type { NextFunction, Request, Response } from 'express';
-import { CreateEquipmentRequestInputSchema, ReportProblemInputSchema } from 'shared';
+import { CreateEquipmentRequestInputSchema, CreateTicketInputSchema, ReportProblemInputSchema } from 'shared';
 import type { PortalController } from '../controllers/PortalController';
 import { requireAuthentication, requirePermission } from '../middleware/auth';
 import type { AuthService } from '../services/AuthService';
@@ -43,6 +43,14 @@ export function createPortalRouter(controller: PortalController, authService: Au
   router.get('/tickets', requirePermission('portal.tickets.view_own'), async (req: Request, res: Response, next: NextFunction) => {
     try {
       res.json(await controller.tickets(req.auth!.userId));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.post('/tickets', requirePermission('portal.tickets.create_own'), async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      res.status(201).json(await controller.createTicket(req.auth!.userId, CreateTicketInputSchema.parse(req.body)));
     } catch (error) {
       next(error);
     }

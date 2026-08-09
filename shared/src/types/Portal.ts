@@ -20,6 +20,8 @@ export interface EquipmentRequest {
   // Joined display fields (populated on the admin queue).
   requestedByName: string | null;
   requestedByUsername: string | null;
+  fulfilledAssetId: number | null;
+  fulfilledAssetTag: string | null;
 }
 
 /** Notes supplied when approving, rejecting, or requesting more information. */

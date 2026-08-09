@@ -247,7 +247,7 @@ export const AddAssetForm = ({ onCancel, onSuccess }: AddAssetFormProps) => {
                 type="number"
                 step="0.01"
                 min="0"
-                className={`${inputStyle} pl-8`}
+                className={`${inputStyle} pl-14`}
                 value={form.purchaseCost}
                 onChange={(e) => update('purchaseCost', e.target.value)}
                 placeholder="0.00"
