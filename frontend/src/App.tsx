@@ -20,6 +20,8 @@ import ChangePasswordPage from './pages/ChangePasswordPage';
 import { PortalLayout } from './layouts/PortalLayout';
 import PortalAssetsPage from './pages/PortalAssetsPage';
 import PortalRequestsPage from './pages/PortalRequestsPage';
+import PortalTicketsPage from './pages/PortalTicketsPage';
+import PortalProfilePage from './pages/PortalProfilePage';
 
 const MaintenancePage = lazy(() => import('./pages/MaintenancePage'));
 const RepairsPage = lazy(() => import('./pages/RepairsPage'));
@@ -51,9 +53,13 @@ export default function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route path="/home" element={<LandingRedirect />} />
-            <Route element={<PortalLayout />}>
-              <Route path="/portal" element={<PortalAssetsPage />} />
-              <Route path="/portal/requests" element={<PortalRequestsPage />} />
+            <Route element={<RequirePermission permission="portal.access" />}>
+              <Route element={<PortalLayout />}>
+                <Route path="/portal" element={<PortalAssetsPage />} />
+                <Route path="/portal/tickets" element={<PortalTicketsPage />} />
+                <Route path="/portal/requests" element={<PortalRequestsPage />} />
+                <Route path="/portal/profile" element={<PortalProfilePage />} />
+              </Route>
             </Route>
             <Route path="/change-password" element={<ChangePasswordPage />} />
             <Route element={<MainLayout />}>

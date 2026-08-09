@@ -50,7 +50,7 @@ export interface CreateEquipmentRequestInput {
   justification?: string | null;
 }
 
-/** Payload for reporting a fault on an assigned asset (feeds the Maintenance module). */
+/** Payload for reporting a fault on an assigned asset (creates a support ticket). */
 export interface ReportProblemInput {
   assetId: number;
   faultDescription: string;

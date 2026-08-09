@@ -63,6 +63,7 @@ export interface ITicketRepository {
   list(query: TicketListQuery): Promise<Ticket[]>;
   summary(): Promise<TicketSummary>;
   getById(id: number): Promise<Ticket | null>;
+  listByUser(userId: number): Promise<Ticket[]>;
   create(input: CreateTicketInput, reportedByUserId: number | null, reportedByPersonId: number | null): Promise<Ticket>;
   assign(id: number, assignedTo: string): Promise<Ticket>;
   start(id: number): Promise<Ticket>;
@@ -131,6 +132,13 @@ export class TicketRepository implements ITicketRepository {
   async getById(id: number): Promise<Ticket | null> {
     const row = this.db.prepare(`${SELECT} WHERE t.id = ?`).get(id) as TicketRow | undefined;
     return row ? mapRow(row) : null;
+  }
+
+  async listByUser(userId: number): Promise<Ticket[]> {
+    const rows = this.db
+      .prepare(`${SELECT} WHERE t.reported_by_user_id = ? ORDER BY t.created_at DESC, t.id DESC`)
+      .all(userId) as TicketRow[];
+    return rows.map(mapRow);
   }
 
   async create(input: CreateTicketInput, reportedByUserId: number | null, reportedByPersonId: number | null): Promise<Ticket> {

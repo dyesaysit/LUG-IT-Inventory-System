@@ -3,7 +3,7 @@ import type {
   AssetAssignment,
   CreateEquipmentRequestInput,
   EquipmentRequest,
-  MaintenanceRecord,
+  Ticket,
   PortalProfile,
   ReportProblemInput,
 } from 'shared';
@@ -11,21 +11,19 @@ import { AppError } from '../middleware/errorHandler';
 import type { IEquipmentRequestRepository } from '../repositories/EquipmentRequestRepository';
 import type { IUserRepository } from '../repositories/UserRepository';
 import type { IAssignmentService } from './AssignmentService';
-import type { IMaintenanceService } from './MaintenanceService';
-
-const today = () => new Date().toISOString().slice(0, 10);
+import type { ITicketRepository } from '../repositories/TicketRepository';
 
 /**
  * Staff Portal service. Everything is scoped to the signed-in user: staff can
- * only see their own assigned assets and requests, and can only report problems
- * on assets currently assigned to them. Problem reports are created as
- * maintenance records, reusing the existing Maintenance module.
+ * only see their own assigned assets, tickets, and requests, and can only report
+ * problems on assets currently assigned to them. Problem reports enter the
+ * existing Ticket workflow for IT triage and optional maintenance/repair conversion.
  */
 export class PortalService {
   constructor(
     private readonly users: IUserRepository,
     private readonly assignments: IAssignmentService,
-    private readonly maintenance: IMaintenanceService,
+    private readonly tickets: ITicketRepository,
     private readonly requests: IEquipmentRequestRepository,
   ) {}
 
@@ -47,7 +45,7 @@ export class PortalService {
     return this.assignments.list({ personId: user.personId, status: 'ACTIVE', pageSize: 200 });
   }
 
-  async reportProblem(userId: number, input: ReportProblemInput): Promise<MaintenanceRecord> {
+  async reportProblem(userId: number, input: ReportProblemInput): Promise<Ticket> {
     const parsed = ReportProblemInputSchema.parse(input);
     const user = await this.users.getUserById(userId);
     if (!user?.personId) {
@@ -62,14 +60,16 @@ export class PortalService {
     if (active.length === 0) {
       throw new AppError('You can only report problems on assets currently assigned to you.', 403);
     }
-    return this.maintenance.create({
+    return this.tickets.create({
       assetId: parsed.assetId,
-      maintenanceType: 'CORRECTIVE',
+      title: `Issue with asset ${active[0].assetTag}`,
       priority: parsed.priority,
-      reportedDate: today(),
-      reportedByPersonId: user.personId,
-      faultDescription: parsed.faultDescription,
-    });
+      description: parsed.faultDescription,
+    }, userId, user.personId);
+  }
+
+  async getMyTickets(userId: number): Promise<Ticket[]> {
+    return this.tickets.listByUser(userId);
   }
 
   async createRequest(userId: number, input: CreateEquipmentRequestInput): Promise<EquipmentRequest> {

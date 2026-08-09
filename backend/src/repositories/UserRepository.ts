@@ -45,6 +45,7 @@ export interface IUserRepository {
   lockUser(id: number, lockedUntilIso: string): Promise<void>;
   checkDuplicateUsername(username: string, excludeUserId?: number): Promise<boolean>;
   checkDuplicateEmail(email: string, excludeUserId?: number): Promise<boolean>;
+  hasActiveStaffAccountForPerson(personId: number, excludeUserId?: number): Promise<boolean>;
   countActiveSystemAdministrators(): Promise<number>;
 }
 
@@ -259,6 +260,20 @@ export class UserRepository implements IUserRepository {
     const row = this.db
       .prepare(`SELECT id FROM users WHERE LOWER(email) = LOWER(?) AND archived_at IS NULL ${excludeUserId ? 'AND id != ?' : ''}`)
       .get(...(excludeUserId ? [email, excludeUserId] : [email])) as { id: number } | undefined;
+    return Boolean(row);
+  }
+
+  async hasActiveStaffAccountForPerson(personId: number, excludeUserId?: number): Promise<boolean> {
+    const row = this.db
+      .prepare(`
+        SELECT u.id FROM users u
+        JOIN roles r ON r.id = u.role_id
+        WHERE u.person_id = ? AND r.code = 'STAFF_USER'
+          AND u.is_active = 1 AND u.archived_at IS NULL
+          ${excludeUserId ? 'AND u.id != ?' : ''}
+        LIMIT 1
+      `)
+      .get(...(excludeUserId ? [personId, excludeUserId] : [personId])) as { id: number } | undefined;
     return Boolean(row);
   }
 

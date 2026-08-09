@@ -52,6 +52,7 @@ export class UserService {
     if (!role || !role.isActive || role.archivedAt) {
       throw new AppError('Role not found or inactive', 400);
     }
+    await this.validateStaffPersonLink(role.code, parsed.personId ?? null);
 
     const passwordHash = await this.passwords.hash(parsed.temporaryPassword);
     const created = await this.users.createUser(parsed, passwordHash);
@@ -80,12 +81,15 @@ export class UserService {
       throw new AppError('Email already exists', 409);
     }
 
+    const nextRoleId = parsed.roleId ?? current.roleId;
+    const nextRole = await this.roles.getRoleById(nextRoleId);
     if (parsed.roleId) {
-      const role = await this.roles.getRoleById(parsed.roleId);
+      const role = nextRole;
       if (!role || !role.isActive || role.archivedAt) {
         throw new AppError('Role not found or inactive', 400);
       }
     }
+    await this.validateStaffPersonLink(nextRole?.code, parsed.personId === undefined ? current.personId : parsed.personId, id);
 
     const updated = await this.users.updateUser(id, parsed);
 
@@ -135,6 +139,8 @@ export class UserService {
       throw new AppError('User not found', 404);
     }
 
+    await this.validateStaffPersonLink(target.roleCode, target.personId, id);
+
     await this.users.reactivateUser(id);
 
     await this.audit.record({
@@ -176,5 +182,15 @@ export class UserService {
     });
 
     return this.getUserById(id);
+  }
+
+  private async validateStaffPersonLink(roleCode: string | undefined, personId: number | null, excludeUserId?: number) {
+    if (roleCode !== 'STAFF_USER') return;
+    if (!personId) {
+      throw new AppError('Linked Person is required when the Staff User role is selected.', 400);
+    }
+    if (await this.users.hasActiveStaffAccountForPerson(personId, excludeUserId)) {
+      throw new AppError('This person is already linked to an active Staff User account.', 409);
+    }
   }
 }

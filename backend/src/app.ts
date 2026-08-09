@@ -124,14 +124,15 @@ export function createApp(config: EnvConfig): Express {
   const settingsController = new SettingsController(settingsService, systemInfoService, databaseMaintenanceService);
   const backupController = new BackupController(backupService);
   const equipmentRequestRepository = createEquipmentRequestRepository();
+  const ticketRepository = createTicketRepository();
   const portalController = new PortalController(
-    new PortalService(userRepository, assignmentService, maintenanceService, equipmentRequestRepository),
+    new PortalService(userRepository, assignmentService, ticketRepository, equipmentRequestRepository),
   );
   const requestReviewController = new RequestReviewController(
     new RequestReviewService(equipmentRequestRepository, assignmentService, auditService),
   );
   const ticketController = new TicketController(
-    new TicketService(createTicketRepository(), maintenanceService, repairService),
+    new TicketService(ticketRepository, maintenanceService, repairService),
   );
 
 // Body parsing

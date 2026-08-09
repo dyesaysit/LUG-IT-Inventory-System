@@ -17,6 +17,10 @@ export class PortalController {
     return this.portal.reportProblem(userId, input);
   }
 
+  tickets(userId: number) {
+    return this.portal.getMyTickets(userId);
+  }
+
   requests(userId: number) {
     return this.portal.getMyRequests(userId);
   }

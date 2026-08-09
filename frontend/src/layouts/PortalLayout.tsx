@@ -3,8 +3,10 @@ import { useAuth } from '../context/AuthContext';
 import { useApplicationSettings } from '../context/ApplicationSettingsContext';
 
 const navItems = [
-  { to: '/portal', label: 'My assets', end: true },
-  { to: '/portal/requests', label: 'My requests', end: false },
+  { to: '/portal', label: 'My Assets / Report Issue', end: true },
+  { to: '/portal/tickets', label: 'My Tickets', end: false },
+  { to: '/portal/requests', label: 'Request Equipment / My Requests', end: false },
+  { to: '/portal/profile', label: 'Profile / Change Password', end: false },
 ];
 
 /** Simplified shell for the staff self-service portal. */

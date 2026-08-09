@@ -151,8 +151,10 @@ export const fetchRoles = async (): Promise<Role[]> => (await api.get<Role[]>('/
 // ----- Staff Portal -----
 export const fetchPortalProfile = async (): Promise<PortalProfile> => (await api.get<PortalProfile>('/portal/me')).data;
 export const fetchMyAssets = async (): Promise<AssetAssignment[]> => (await api.get<AssetAssignment[]>('/portal/assets')).data;
-export const reportAssetProblem = async (input: ReportProblemInput): Promise<MaintenanceRecord> =>
-  (await api.post<MaintenanceRecord>('/portal/problems', input)).data;
+export const reportAssetProblem = async (input: ReportProblemInput): Promise<Ticket> =>
+  (await api.post<Ticket>('/portal/problems', input)).data;
+export const fetchMyTickets = async (): Promise<Ticket[]> =>
+  (await api.get<Ticket[]>('/portal/tickets')).data;
 export const fetchMyRequests = async (): Promise<EquipmentRequest[]> =>
   (await api.get<EquipmentRequest[]>('/portal/requests')).data;
 export const createEquipmentRequest = async (input: CreateEquipmentRequestInput): Promise<EquipmentRequest> =>

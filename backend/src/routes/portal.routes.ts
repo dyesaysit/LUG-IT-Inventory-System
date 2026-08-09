@@ -2,7 +2,7 @@ import { Router } from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import { CreateEquipmentRequestInputSchema, ReportProblemInputSchema } from 'shared';
 import type { PortalController } from '../controllers/PortalController';
-import { requireAuthentication } from '../middleware/auth';
+import { requireAuthentication, requirePermission } from '../middleware/auth';
 import type { AuthService } from '../services/AuthService';
 
 const parseId = (value: string): number | null => (/^\d+$/.test(value) ? Number(value) : null);
@@ -14,8 +14,9 @@ const parseId = (value: string): number | null => (/^\d+$/.test(value) ? Number(
 export function createPortalRouter(controller: PortalController, authService: AuthService): Router {
   const router = Router();
   router.use(requireAuthentication(authService));
+  router.use(requirePermission('portal.access'));
 
-  router.get('/me', async (req: Request, res: Response, next: NextFunction) => {
+  router.get('/me', requirePermission('portal.profile.manage_own'), async (req: Request, res: Response, next: NextFunction) => {
     try {
       res.json(await controller.profile(req.auth!.userId));
     } catch (error) {
@@ -23,7 +24,7 @@ export function createPortalRouter(controller: PortalController, authService: Au
     }
   });
 
-  router.get('/assets', async (req: Request, res: Response, next: NextFunction) => {
+  router.get('/assets', requirePermission('portal.assets.view_own'), async (req: Request, res: Response, next: NextFunction) => {
     try {
       res.json(await controller.assets(req.auth!.userId));
     } catch (error) {
@@ -31,7 +32,7 @@ export function createPortalRouter(controller: PortalController, authService: Au
     }
   });
 
-  router.post('/problems', async (req: Request, res: Response, next: NextFunction) => {
+  router.post('/problems', requirePermission('portal.tickets.create_own'), async (req: Request, res: Response, next: NextFunction) => {
     try {
       res.status(201).json(await controller.reportProblem(req.auth!.userId, ReportProblemInputSchema.parse(req.body)));
     } catch (error) {
@@ -39,7 +40,15 @@ export function createPortalRouter(controller: PortalController, authService: Au
     }
   });
 
-  router.get('/requests', async (req: Request, res: Response, next: NextFunction) => {
+  router.get('/tickets', requirePermission('portal.tickets.view_own'), async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      res.json(await controller.tickets(req.auth!.userId));
+    } catch (error) {
+      next(error);
+    }
+  });
+
+  router.get('/requests', requirePermission('portal.requests.view_own'), async (req: Request, res: Response, next: NextFunction) => {
     try {
       res.json(await controller.requests(req.auth!.userId));
     } catch (error) {
@@ -47,7 +56,7 @@ export function createPortalRouter(controller: PortalController, authService: Au
     }
   });
 
-  router.post('/requests', async (req: Request, res: Response, next: NextFunction) => {
+  router.post('/requests', requirePermission('portal.requests.create_own'), async (req: Request, res: Response, next: NextFunction) => {
     try {
       res
         .status(201)
@@ -57,7 +66,7 @@ export function createPortalRouter(controller: PortalController, authService: Au
     }
   });
 
-  router.post('/requests/:id/cancel', async (req: Request, res: Response, next: NextFunction) => {
+  router.post('/requests/:id/cancel', requirePermission('portal.requests.create_own'), async (req: Request, res: Response, next: NextFunction) => {
     try {
       const id = parseId(String(req.params.id));
       if (!id) {

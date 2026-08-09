@@ -96,6 +96,10 @@ export function UserForm({ roles, people, user, onCancel, onSuccess }: UserFormP
       }
     }
     if (!form.roleId) errors.roleId = 'Please select a role.';
+    const selectedRole = roles.find((role) => role.id === Number(form.roleId));
+    if (selectedRole?.code === 'STAFF_USER' && !form.personId) {
+      errors.personId = 'Linked Person is required for a Staff User.';
+    }
     if (form.email.trim() && !isValidEmail(form.email.trim())) {
       errors.email = 'Enter a valid email address.';
     }
@@ -177,7 +181,12 @@ export function UserForm({ roles, people, user, onCancel, onSuccess }: UserFormP
           </select>
         </FormField>
 
-        <FormField label="Linked person" helpText="Link this account to a staff record, or leave unlinked.">
+        <FormField
+          label="Linked person"
+          required={roles.find((role) => role.id === Number(form.roleId))?.code === 'STAFF_USER'}
+          error={fieldErrors.personId}
+          helpText="Required for Staff Users so their assets, tickets, and requests can be scoped correctly."
+        >
           <select value={form.personId} onChange={(event) => setField('personId', event.target.value)} className={inputClasses}>
             <option value="">No linked person</option>
             {activePeople.map((person) => (
