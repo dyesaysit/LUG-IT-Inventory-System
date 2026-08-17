@@ -203,10 +203,9 @@ export const AddAssetForm = ({ onCancel, onSuccess }: AddAssetFormProps) => {
             />
           </FormField>
 
-          <FormField label="Model" required>
+          <FormField label="Model">
             <input
               type="text"
-              required
               className={inputStyle}
               value={form.model}
               onChange={(e) => update('model', e.target.value)}

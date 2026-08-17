@@ -446,7 +446,7 @@ export class ReportService {
 
 <header class="print-header">
   <div class="logo-cell">
-    <img src="${escapeHtml(profile.logoUrl || '/LUG-logo-200x84-transparent.png')}" alt="${escapeHtml(profile.organizationName)} logo">
+    ${profile.logoUrl ? `<img src="${escapeHtml(profile.logoUrl)}" alt="${escapeHtml(profile.organizationName)} logo">` : `<strong>${escapeHtml(profile.organizationShortName)}</strong>`}
   </div>
   <div class="org-info">
     <div class="org-name">${escapeHtml(profile.organizationName)}</div>

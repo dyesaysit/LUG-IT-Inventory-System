@@ -14,5 +14,6 @@
   },
   "ts-node": {
     "files": true
-  }
+  },
+  "exclude": ["src/tests"]
 }

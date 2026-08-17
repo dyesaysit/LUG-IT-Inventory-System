@@ -72,6 +72,20 @@ export interface LoginResponse {
   permissions: string[];
 }
 
+export interface InitialSetupInput {
+  username: string;
+  password: string;
+  confirmPassword: string;
+  systemName: string;
+  institutionName: string;
+  institutionShortName: string;
+  logoDataUrl?: string;
+}
+
+export interface InitialSetupStatus {
+  setupRequired: boolean;
+}
+
 export interface ChangePasswordInput {
   currentPassword: string;
   newPassword: string;

@@ -22,6 +22,7 @@ const envSchema = z.object({
   INITIAL_ADMIN_PASSWORD: z.string().optional(),
   BACKUP_DIR: z.string().optional(),
   BACKUP_DIRECTORY: z.string().optional(),
+  APPLICATION_DATA_DIR: z.string().optional(),
 });
 
 /** Parsed and validated environment variables. */

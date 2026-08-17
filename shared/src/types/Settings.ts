@@ -7,7 +7,8 @@ export type SettingCategory =
   | 'ASSIGNMENTS'
   | 'MAINTENANCE'
   | 'REPORTS'
-  | 'SECURITY';
+  | 'SECURITY'
+  | 'EMAIL';
 
 /** The runtime type a setting's string value should be interpreted as. */
 export type SettingValueType = 'STRING' | 'NUMBER' | 'BOOLEAN' | 'JSON';

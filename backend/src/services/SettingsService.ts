@@ -13,6 +13,7 @@ const SENSITIVE_MASK = '••••••••';
 
 /** Permission required to edit settings within a given category. */
 export const settingsPermissionForCategory = (category: string): string => {
+  if (category === 'EMAIL') return 'settings.email';
   if (category === 'SECURITY') return 'settings.security';
   if (category === 'REPORTS') return 'settings.reports';
   return 'settings.manage';
@@ -205,20 +206,20 @@ export class SettingsService implements ISettingsService {
     return {
       organizationName:
         findSettingValue(org, 'organization_name') || 'School IT Inventory System',
-      organizationShortName: findSettingValue(org, 'organization_short_name') || 'LUG',
+      organizationShortName: findSettingValue(org, 'organization_short_name') || 'ORG',
       systemName: findSettingValue(org, 'system_name') || 'IT Inventory System',
       departmentName:
         findSettingValue(org, 'department_name') || 'Information Technology Department',
-      countryCode: findSettingValue(org, 'country_code') || 'GH',
-      countryName: findSettingValue(org, 'country_name') || 'Ghana',
-      timezone: findSettingValue(org, 'timezone') || 'Africa/Accra',
-      locale: findSettingValue(org, 'locale') || 'en-GH',
+      countryCode: findSettingValue(org, 'country_code') || '',
+      countryName: findSettingValue(org, 'country_name') || '',
+      timezone: findSettingValue(org, 'timezone') || 'UTC',
+      locale: findSettingValue(org, 'locale') || 'en',
       dateFormat: (findSettingValue(org, 'date_format') || 'DD/MM/YYYY') as 'DD/MM/YYYY',
       timeFormat: (findSettingValue(org, 'time_format') || '12_HOUR') as '12_HOUR',
-      currencyCode: findSettingValue(org, 'currency') || 'GHS',
-      currencySymbol: findSettingValue(org, 'currency_symbol') || 'GH₵',
-      currencyName: findSettingValue(org, 'currency_name') || 'Ghanaian Cedi',
-      assetTagPrefix: findSettingValue(org, 'asset_tag_prefix') || 'LUG',
+      currencyCode: findSettingValue(org, 'currency') || 'USD',
+      currencySymbol: findSettingValue(org, 'currency_symbol') || '$',
+      currencyName: findSettingValue(org, 'currency_name') || 'US Dollar',
+      assetTagPrefix: findSettingValue(org, 'asset_tag_prefix') || 'ASSET',
       supportEmail: findSettingValue(org, 'supportEmail') || '',
       supportPhone: findSettingValue(org, 'support_phone') || '',
       address: findSettingValue(org, 'address') || '',
@@ -227,7 +228,7 @@ export class SettingsService implements ISettingsService {
         findSettingValue(reports, 'report_footer_text') || '',
       confidentialityText:
         findSettingValue(reports, 'report_confidentiality_footer') || 'For internal use only.',
-      logoUrl: findSettingValue(org, 'logo_path') || '/LUG-logo-200x84-transparent.png',
+      logoUrl: findSettingValue(org, 'logo_path') || null,
       faviconUrl: findSettingValue(org, 'favicon_path') || null,
       logoDisplaySize: findSettingValue(org, 'logo_display_size') || '120',
     };

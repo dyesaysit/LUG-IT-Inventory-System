@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import type { BackupRecord, BackupStatus } from 'shared';
 import { useAuth } from '../context/AuthContext';
-import { createBackup, deleteBackup, downloadBackup, fetchBackups, verifyBackup } from '../services/api';
+import { createBackup, deleteBackup, downloadBackup, fetchBackups, fetchBackupStorage, importBackup, saveBackupStorage, verifyBackup } from '../services/api';
 import { apiErrorMessage } from '../utils/api-error';
 import { ConfirmDialog } from './ConfirmDialog';
 import { RestoreWizard } from './RestoreWizard';
@@ -56,12 +56,16 @@ export function BackupPanel() {
   const [restoreTarget, setRestoreTarget] = useState<BackupRecord | null>(null);
   const [archiveTarget, setArchiveTarget] = useState<BackupRecord | null>(null);
   const [archiveBusy, setArchiveBusy] = useState(false);
+  const [storageDirectory, setStorageDirectory] = useState('');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
-      setBackups(await fetchBackups());
+      const [records, storage] = await Promise.all([fetchBackups(), fetchBackupStorage()]);
+      setBackups(records);
+      setStorageDirectory(storage.directory);
     } catch (requestError) {
       setError(apiErrorMessage(requestError, 'Unable to load backup history.'));
     } finally {
@@ -124,6 +128,21 @@ export function BackupPanel() {
     }
   };
 
+  const handleSaveStorage = async () => {
+    setBusyLabel('Checking backup directory…'); setError(null);
+    try { const result=await saveBackupStorage(storageDirectory);setStorageDirectory(result.directory);setSuccess('Backup directory saved. New backups will be written there.'); }
+    catch(requestError){setError(apiErrorMessage(requestError,'Unable to use that backup directory.'));}
+    finally{setBusyLabel(null);}
+  };
+
+  const handleImport = async () => {
+    if(!selectedFile)return;
+    setBusyLabel('Uploading and validating backup…');setError(null);
+    try{const backup=await importBackup(selectedFile);setBackups(current=>[backup,...current]);setSelectedFile(null);setSuccess(`${backup.filename} was validated and added to restore history.`);}
+    catch(requestError){setError(apiErrorMessage(requestError,'The selected file could not be imported.'));}
+    finally{setBusyLabel(null);}
+  };
+
   const confirmArchive = async () => {
     if (!archiveTarget) return;
     setArchiveBusy(true);
@@ -169,6 +188,26 @@ export function BackupPanel() {
         <div className="rounded border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">{success}</div>
       )}
       {error && <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+
+      <section className="grid gap-4 rounded border border-lug-light-gray bg-gray-50 p-4 lg:grid-cols-2">
+        <div>
+          <h3 className="text-sm font-semibold text-lug-charcoal">Backup destination</h3>
+          <p className="mt-1 text-xs text-lug-gray">Absolute path on the server, mounted USB device, or mounted network share.</p>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input value={storageDirectory} onChange={(event)=>setStorageDirectory(event.target.value)} className="min-w-0 flex-1 rounded border border-lug-light-gray px-3 py-2 text-sm" placeholder="D:\Inventory Backups" />
+            {canCreate&&<button type="button" disabled={busy||!storageDirectory.trim()} onClick={()=>void handleSaveStorage()} className="rounded border border-lug-red px-4 py-2 text-sm font-medium text-lug-red disabled:opacity-50">Save directory</button>}
+          </div>
+        </div>
+        <div>
+          <h3 className="text-sm font-semibold text-lug-charcoal">Restore from a backup file</h3>
+          <p className="mt-1 text-xs text-lug-gray">Select a downloaded or transferred .sqlite backup. It is validated before restore.</p>
+          <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+            <input type="file" accept=".sqlite,application/vnd.sqlite3,application/octet-stream" onChange={(event)=>setSelectedFile(event.target.files?.[0]??null)} className="min-w-0 flex-1 rounded border border-lug-light-gray bg-white px-3 py-2 text-sm" />
+            {canRestore&&<button type="button" disabled={busy||!selectedFile||locked} onClick={()=>void handleImport()} className="rounded border border-lug-red px-4 py-2 text-sm font-medium text-lug-red disabled:opacity-50">Add to restore list</button>}
+          </div>
+          {selectedFile&&<p className="mt-2 text-xs text-lug-gray">Selected: {selectedFile.name} · {formatBytes(selectedFile.size)} · File date {new Date(selectedFile.lastModified).toLocaleString('en-GB')}</p>}
+        </div>
+      </section>
 
       <div className="flex flex-wrap items-center gap-2">
         {canCreate && (

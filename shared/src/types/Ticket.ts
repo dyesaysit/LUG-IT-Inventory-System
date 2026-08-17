@@ -75,3 +75,8 @@ export interface TicketSummary {
   inProgress: number;
   closedThisMonth: number;
 }
+
+/** A request-for-information conversation entry attached to a ticket. */
+export interface TicketMessage { id:number;ticketId:number;authorUserId:number|null;authorKind:'IT'|'REQUESTER';message:string;createdAt:string }
+export interface RequestTicketInfoInput { message:string }
+export interface RespondTicketInfoInput { message:string }

@@ -13,6 +13,7 @@ import type {
   Ticket,
   TicketListQuery,
   TicketSummary,
+  TicketMessage,
 } from 'shared';
 import { AppError } from '../middleware/errorHandler';
 import type { ITicketRepository } from '../repositories/TicketRepository';
@@ -20,6 +21,7 @@ import type { IMaintenanceService } from './MaintenanceService';
 import type { IRepairService } from './RepairService';
 import { recordAudit } from './audit-event';
 import type { NotificationService } from './NotificationService';
+import type { EmailService } from './EmailService';
 
 const today = () => new Date().toISOString().slice(0, 10);
 
@@ -33,6 +35,7 @@ export class TicketService {
     private readonly maintenance: IMaintenanceService,
     private readonly repairs: IRepairService,
     private readonly notifications: NotificationService,
+    private readonly email?: EmailService,
   ) {}
 
   list(query: TicketListQuery): Promise<Ticket[]> {
@@ -57,6 +60,7 @@ export class TicketService {
     const created = await this.repo.create(CreateTicketInputSchema.parse(input), reportedByUserId, reportedByPersonId);
     await recordAudit('SYSTEM', created.id, 'CREATE', `Ticket ${created.ticketNumber} created`);
     this.notifications.notifyPermission('tickets.update', { type:'TICKET_CREATED', title:'New IT Ticket', message:`${created.requesterName || created.requesterUsername || 'A staff member'} reported: ${created.title}`, entityType:'TICKET', entityId:created.id });
+    await this.email?.queuePermission('tickets.update', `New ticket ${created.ticketNumber}: ${created.title}`, `${created.requesterName || created.requesterUsername || 'A staff member'} raised a ${created.priority.toLowerCase()} priority ticket: ${created.title}`, created.id);
     return created;
   }
 
@@ -69,6 +73,7 @@ export class TicketService {
     const updated = await this.repo.assign(id, parsed.assignedTo);
     await recordAudit('SYSTEM', id, 'ASSIGN', `Ticket ${updated.ticketNumber} assigned to ${parsed.assignedTo}`);
     this.notifyRequester(updated,'TICKET_ASSIGNED','Ticket assigned',`Your ticket ${updated.ticketNumber} has been assigned to IT.`);
+    await this.emailRequester(updated, 'Ticket assigned', `Your ticket ${updated.ticketNumber} has been assigned to IT.`);
     return updated;
   }
 
@@ -80,6 +85,7 @@ export class TicketService {
     const updated = await this.repo.start(id);
     await recordAudit('SYSTEM', id, 'START', `Ticket ${updated.ticketNumber} started`);
     this.notifyRequester(updated,'TICKET_UPDATED','Ticket updated',`IT has started work on ticket ${updated.ticketNumber}.`);
+    await this.emailRequester(updated, 'IT started work on your ticket', `IT has started work on ticket ${updated.ticketNumber}.`);
     return updated;
   }
 
@@ -135,6 +141,7 @@ export class TicketService {
     const updated = await this.repo.complete(id, parsed.resolution);
     await recordAudit('SYSTEM', id, 'COMPLETE', `Ticket ${updated.ticketNumber} completed`);
     this.notifyRequester(updated, 'TICKET_COMPLETED', 'Ticket resolved', `Your ticket ${updated.ticketNumber} has been resolved.\n\nIT message: ${parsed.resolution}`);
+    await this.emailRequester(updated, 'Ticket resolved', `Your ticket ${updated.ticketNumber} has been resolved.\n\nIT message: ${parsed.resolution}`);
     return updated;
   }
 
@@ -146,6 +153,7 @@ export class TicketService {
     const updated = await this.repo.close(id);
     await recordAudit('SYSTEM', id, 'UPDATE', `Ticket ${updated.ticketNumber} closed`);
     this.notifyRequester(updated,'TICKET_CLOSED','Ticket closed',`Your ticket ${updated.ticketNumber} has been closed.`);
+    await this.emailRequester(updated, 'Ticket closed', `Your ticket ${updated.ticketNumber} has been closed.`);
     return updated;
   }
 
@@ -156,8 +164,14 @@ export class TicketService {
     }
     const updated = await this.repo.cancel(id);
     await recordAudit('SYSTEM', id, 'CANCEL', `Ticket ${updated.ticketNumber} cancelled`);
+    await this.emailRequester(updated,'Ticket cancelled',`Ticket ${updated.ticketNumber} has been cancelled by IT.`);
     return updated;
   }
 
+  async messages(id:number):Promise<TicketMessage[]>{await this.get(id);return this.repo.listMessages(id)}
+  async requestInformation(id:number,userId:number,message:string):Promise<TicketMessage>{const ticket=await this.get(id);if(['COMPLETED','CLOSED','CANCELLED'].includes(ticket.status))throw new AppError('Additional information cannot be requested for a finished ticket.',400);const row=await this.repo.addMessage(id,userId,'IT',message);await recordAudit('SYSTEM',id,'UPDATE',`Requested additional information for ${ticket.ticketNumber}`);this.notifyRequester(ticket,'TICKET_INFO_REQUIRED','Additional information required',`IT requested more information for ${ticket.ticketNumber}: ${message}`);await this.emailRequester(ticket,'Additional information required',`IT requested more information for ${ticket.ticketNumber}:\n\n${message}`);return row}
+  async respond(id:number,userId:number,message:string):Promise<TicketMessage>{const ticket=await this.get(id);if(!await this.repo.isOwnedBy(id,userId))throw new AppError('Ticket not found',404);if(['CLOSED','CANCELLED'].includes(ticket.status))throw new AppError('This ticket no longer accepts responses.',400);const row=await this.repo.addMessage(id,userId,'REQUESTER',message);await recordAudit('SYSTEM',id,'UPDATE',`Requester responded to ${ticket.ticketNumber}`);this.notifications.notifyPermission('tickets.update',{type:'TICKET_REQUESTER_RESPONSE',title:'Ticket requester responded',message:`The requester responded on ${ticket.ticketNumber}: ${message}`,entityType:'TICKET',entityId:id});await this.email?.queuePermission('tickets.update',`Requester responded: ${ticket.ticketNumber}`,`The requester provided additional information for ${ticket.ticketNumber}:\n\n${message}`,id);return row}
+
   private notifyRequester(ticket:Ticket,type:string,title:string,message:string):void{this.notifications.notifyUser(ticket.reportedByUserId,{type,title,message,entityType:'TICKET',entityId:ticket.id})}
+  private async emailRequester(ticket:Ticket, title:string, message:string):Promise<void>{await this.email?.queueRequester(ticket.reportedByUserId,ticket.reportedByPersonId,`${title}: ${ticket.ticketNumber}`,message,ticket.id)}
 }

@@ -1,5 +1,5 @@
 import type Database from 'better-sqlite3';
-import type { CreateTicketInput, Ticket, TicketListQuery, TicketStatus, TicketSummary } from 'shared';
+import type { CreateTicketInput, Ticket, TicketListQuery, TicketMessage, TicketStatus, TicketSummary } from 'shared';
 import { getCurrentDb } from '../database/connection';
 
 interface TicketRow {
@@ -85,6 +85,9 @@ export interface ITicketRepository {
   complete(id: number, resolution: string): Promise<Ticket>;
   close(id: number): Promise<Ticket>;
   cancel(id: number): Promise<Ticket>;
+  addMessage(ticketId:number,userId:number|null,kind:'IT'|'REQUESTER',message:string):Promise<TicketMessage>;
+  listMessages(ticketId:number):Promise<TicketMessage[]>;
+  isOwnedBy(ticketId:number,userId:number):Promise<boolean>;
 }
 
 const TERMINAL: TicketStatus[] = ['COMPLETED', 'CLOSED', 'CANCELLED'];
@@ -213,6 +216,9 @@ export class TicketRepository implements ITicketRepository {
   cancel(id: number): Promise<Ticket> {
     return this.patch(id, "status = 'CANCELLED'");
   }
+  async addMessage(ticketId:number,userId:number|null,kind:'IT'|'REQUESTER',message:string):Promise<TicketMessage>{const result=this.db.prepare('INSERT INTO ticket_messages(ticket_id,author_user_id,author_kind,message) VALUES(?,?,?,?)').run(ticketId,userId,kind,message.trim());return this.db.prepare('SELECT id,ticket_id ticketId,author_user_id authorUserId,author_kind authorKind,message,created_at createdAt FROM ticket_messages WHERE id=?').get(result.lastInsertRowid) as TicketMessage}
+  async listMessages(ticketId:number):Promise<TicketMessage[]>{return this.db.prepare('SELECT id,ticket_id ticketId,author_user_id authorUserId,author_kind authorKind,message,created_at createdAt FROM ticket_messages WHERE ticket_id=? ORDER BY created_at,id').all(ticketId) as TicketMessage[]}
+  async isOwnedBy(ticketId:number,userId:number):Promise<boolean>{return this.db.prepare('SELECT 1 FROM tickets t LEFT JOIN users u ON u.id=? WHERE t.id=? AND (t.reported_by_user_id=? OR (u.person_id IS NOT NULL AND t.reported_by_person_id=u.person_id))').get(userId,ticketId,userId)!==undefined}
 }
 
 export const createTicketRepository = (db?: Database.Database): ITicketRepository => new TicketRepository(db);

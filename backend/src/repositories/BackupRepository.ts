@@ -53,6 +53,7 @@ export interface IBackupRepository {
     createdBy: number | null,
   ): Promise<BackupRecordWithPath>;
   completeBackupRecord(id: number, sizeBytes: number, checksum: string): Promise<void>;
+  setCreatedAt(id: number, createdAt: string): Promise<void>;
   failBackupRecord(id: number, errorMessage: string): Promise<void>;
   archiveBackupRecord(id: number, notes: string): Promise<void>;
   markVerification(id: number, valid: boolean, notes: string | null): Promise<void>;
@@ -122,6 +123,10 @@ export class BackupRepository implements IBackupRepository {
 
   async archiveBackupRecord(id: number, notes: string): Promise<void> {
     this.db.prepare(`UPDATE backup_records SET notes = @notes, archived_at = datetime('now') WHERE id = @id`).run({ id, notes });
+  }
+
+  async setCreatedAt(id: number, createdAt: string): Promise<void> {
+    this.db.prepare('UPDATE backup_records SET created_at = ? WHERE id = ?').run(createdAt, id);
   }
 
   async markVerification(id: number, valid: boolean, notes: string | null): Promise<void> {

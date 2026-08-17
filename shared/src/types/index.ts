@@ -83,9 +83,9 @@ export type { MaintenanceRecord,MaintenanceType,MaintenancePriority,MaintenanceS
 export type { RepairJob,RepairType,RepairPriority,RepairStatus,RepairApprovalStatus,RepairOutcome,CreateRepairInput,UpdateRepairInput,ApproveRepairInput,CompleteRepairInput,ReturnRepairInput,RepairListQuery,RepairSummary } from './Repair';
 export type { AuditLog,AuditAction,AuditEntityType,AuditLogQuery,CreateAuditLogInput,AuditSummary } from './Audit';
 export type { ReportType,ReportFormat,ReportDateRange,ReportFilter,ReportSummary,AssetReportRow,AssignmentReportRow,MaintenanceReportRow,RepairReportRow,DepartmentReportRow,LocationReportRow,PersonReportRow,AuditReportRow,ReportRow,ReportResult,ReportCatalogItem } from './Report';
-export type { User, SafeUser, Role, Permission, AuthSession, LoginInput, LoginResponse, ChangePasswordInput, CreateUserInput, UpdateUserInput, ResetPasswordInput, UserListQuery, AuthenticatedUser } from './Auth';
+export type { User, SafeUser, Role, Permission, AuthSession, LoginInput, LoginResponse, ChangePasswordInput, CreateUserInput, UpdateUserInput, ResetPasswordInput, UserListQuery, AuthenticatedUser, InitialSetupInput, InitialSetupStatus } from './Auth';
 export type { EquipmentRequestStatus, EquipmentRequest, CreateEquipmentRequestInput, ReportProblemInput, PortalProfile, ReviewRequestInput, FulfilRequestInput, EquipmentRequestListQuery } from './Portal';
-export type { TicketStatus, TicketPriority, TicketCategory, Ticket, CreateTicketInput, AssignTicketInput, CompleteTicketInput, ConvertTicketInput, TicketListQuery, TicketSummary } from './Ticket';
+export type { TicketStatus, TicketPriority, TicketCategory, Ticket, CreateTicketInput, AssignTicketInput, CompleteTicketInput, ConvertTicketInput, TicketListQuery, TicketSummary, TicketMessage, RequestTicketInfoInput, RespondTicketInfoInput } from './Ticket';
 export type { Notification, NotificationEntityType, NotificationListQuery } from './Notification';
 
 export type {

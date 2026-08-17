@@ -1,4 +1,6 @@
 import express from 'express';
+import path from 'node:path';
+import fs from 'node:fs';
 import type { Express } from 'express';
 import cookieParser from 'cookie-parser';
 import helmet from 'helmet';
@@ -77,6 +79,12 @@ import { createTicketRouter } from './routes/ticket.routes';
 import { RequestReviewService } from './services/RequestReviewService';
 import { RequestReviewController } from './controllers/RequestReviewController';
 import { createEquipmentRequestRouter } from './routes/equipment-request.routes';
+import { getCurrentDb } from './database/connection';
+import { InitialSetupService } from './services/InitialSetupService';
+import { InitialSetupController } from './controllers/InitialSetupController';
+import { createInitialSetupRouter } from './routes/initial-setup.routes';
+import { SecretService } from './services/SecretService';
+import { EmailService } from './services/EmailService';
 
 /**
  * Creates the configured Express application.
@@ -87,9 +95,11 @@ import { createEquipmentRequestRouter } from './routes/equipment-request.routes'
 export function createApp(config: EnvConfig): Express {
   const app = express();
   const isProduction = config.NODE_ENV === 'production';
+  const secureCookies = isProduction && process.env.COOKIE_SECURE !== 'false';
   const auditService=new AuditService(createAuditRepository());
   configureAudit(auditService);
   const passwordService = new PasswordService();
+  const initialSetupService = new InitialSetupService(getCurrentDb(), passwordService);
   const userRepository = createUserRepository();
   const roleRepository = createRoleRepository();
   const permissionRepository = createPermissionRepository();
@@ -100,6 +110,9 @@ export function createApp(config: EnvConfig): Express {
   const userController = new UserController(userService);
   const auditController=new AuditController(auditService);
   const settingsService = createSettingsService(createSettingsRepository());
+  const settingsRepository = createSettingsRepository();
+  const emailService = new EmailService(getCurrentDb(), settingsRepository, new SecretService(config));
+  emailService.start();
   const reportController=new ReportController(new ReportService(createReportRepository(), settingsService));
   const assetRepository = createAssetRepository();
   const assetService = createAssetService(assetRepository);
@@ -129,7 +142,7 @@ export function createApp(config: EnvConfig): Express {
   const equipmentRequestRepository = createEquipmentRequestRepository();
   const ticketRepository = createTicketRepository();
   const notificationService = new NotificationService(new NotificationRepository());
-  const ticketService = new TicketService(ticketRepository, maintenanceService, repairService, notificationService);
+  const ticketService = new TicketService(ticketRepository, maintenanceService, repairService, notificationService, emailService);
   const portalController = new PortalController(
     new PortalService(userRepository, assignmentService, ticketService, equipmentRequestRepository, notificationService),
   );
@@ -140,8 +153,27 @@ export function createApp(config: EnvConfig): Express {
     ticketService,
   );
 
-// Body parsing
+// Security headers. This app is served over plain HTTP on a trusted LAN (accessed by
+// hostname or IP, e.g. http://server-ip:3000), so we must NOT force HTTPS: the default
+// `upgrade-insecure-requests` directive and HSTS make browsers fetch the JS/CSS over
+// https, which fails with no TLS and leaves users with a blank page. We keep a
+// self-only CSP for defence in depth but drop the HTTPS-only pieces.
   app.use(helmet({
+    contentSecurityPolicy: {
+      useDefaults: true,
+      directives: {
+        'script-src': ["'self'"],
+        'style-src': ["'self'", "'unsafe-inline'"],
+        'img-src': ["'self'", 'data:', 'blob:'],
+        'font-src': ["'self'", 'data:'],
+        'connect-src': ["'self'"],
+        // Remove the default directive that upgrades http asset requests to https.
+        'upgrade-insecure-requests': null,
+      },
+    },
+    // No HSTS: we intentionally serve over HTTP on the LAN.
+    hsts: false,
+    // Allow same-origin resource loads regardless of the host used to reach the server.
     crossOriginResourcePolicy: false,
   }));
   app.use(cookieParser());
@@ -150,16 +182,25 @@ export function createApp(config: EnvConfig): Express {
 
 // Public (unauthenticated) routes
   app.use('/api', createPublicRouter(settingsService));
+  app.use('/api/health', createHealthRouter(config));
+  app.use('/api/setup', createInitialSetupRouter(new InitialSetupController(initialSetupService)));
+  app.use('/api', (_req, res, next) => {
+    if (initialSetupService.getStatus().setupRequired) {
+      res.status(503).json({ success: false, error: 'Initial administrator setup is required.', code: 'SETUP_REQUIRED' });
+      return;
+    }
+    next();
+  });
 
 // API routes
-  app.use('/api/health', createHealthRouter(config));
-  app.use('/api/auth', createAuthRouter(authController, authService, isProduction));
+  app.use('/api/auth', createAuthRouter(authController, authService, secureCookies));
   app.use('/api/users', createUserRouter(userController, authService));
+  app.use('/api/settings/branding', createBrandingRouter(settingsService, authService));
   app.use('/api', createRolePermissionRouter(userController, authService));
   app.use('/api/assets', createAssetRouter(assetController, authService));
   app.use('/api/asset-categories', createAssetCategoryRouter(assetController, authService));
   app.use('/api/departments', createDepartmentRouter(departmentController, authService));
-  app.use('/api/people', createPersonRouter(personController, authService));
+  app.use('/api/people', createPersonRouter(personController, authService, departmentRepository));
   app.use('/api/locations', createLocationRouter(locationController, authService));
   app.use('/api/assignments', createAssignmentRouter(assignmentController, authService));
   app.use('/api/assets', createAssetAssignmentHistoryRouter(assignmentController, authService));
@@ -169,21 +210,43 @@ export function createApp(config: EnvConfig): Express {
   app.use('/api/assets',createAssetRepairHistoryRouter(repairController, authService));
   app.use('/api/audit',createAuditRouter(auditController, authService));
   app.use('/api/reports',createReportRouter(reportController, authService));
-  app.use('/api/settings/branding', createBrandingRouter(settingsService, authService));
   app.use('/api/settings/backups', createBackupRouter(backupController, authService));
-  app.use('/api/settings', createSettingsRouter(settingsController, authService));
+  app.use('/api/settings', createSettingsRouter(settingsController, authService, emailService));
   app.use('/api/portal', createPortalRouter(portalController, authService));
   app.use('/api/equipment-requests', createEquipmentRequestRouter(requestReviewController, authService));
   app.use('/api/tickets', createTicketRouter(ticketController, authService));
   app.use('/api/notifications', createNotificationRouter(notificationService, authService));
 
-// Serve frontend static files in production
+  // Keep unknown API requests as JSON errors instead of sending the SPA shell.
+  app.use('/api', notFound);
+
+  // Serve frontend static files in production
   if (config.NODE_ENV === 'production') {
-  const frontendDist = './frontend/dist';
-    app.use(express.static(frontendDist));
+    const frontendCandidates = [
+      path.resolve(__dirname, '../../frontend/dist'),
+      path.resolve(process.cwd(), '../frontend/dist'),
+      path.resolve(process.cwd(), 'frontend/dist'),
+    ];
+    const frontendDist = frontendCandidates.find((candidate) => fs.existsSync(path.join(candidate, 'index.html')));
+    if (!frontendDist) throw new Error(`Production frontend was not found. Checked: ${frontendCandidates.join(', ')}`);
+    // redirect:false stops express.static from issuing a trailing-slash 301 for the
+    // client route "/assets" (which collides with the hashed static "assets/" folder),
+    // letting it fall through to the SPA shell instead.
+    app.use(express.static(frontendDist, { index: false, redirect: false }));
   // SPA fallback — serve index.html for any non-API route
-    app.get('*', (_req, res) => {
-      res.sendFile(`${frontendDist}/index.html`);
+    app.get('/', (_req, res) => {
+      if (initialSetupService.getStatus().setupRequired) {
+        res.redirect('/setup');
+        return;
+      }
+      res.sendFile(path.join(frontendDist, 'index.html'));
+    });
+    app.get('/{*splat}', (req, res) => {
+      if (initialSetupService.getStatus().setupRequired && req.path !== '/setup') {
+        res.redirect('/setup');
+        return;
+      }
+      res.sendFile(path.join(frontendDist, 'index.html'));
     });
   }
 

@@ -10,8 +10,10 @@ import {
   fetchAssets,
   fetchTickets,
   fetchTicketSummary,
+  requestTicketInformation,
   startTicket,
 } from '../services/api';
+import { TicketMessageDialog } from '../components/TicketMessageDialog';
 import { useAuth } from '../context/AuthContext';
 import { apiErrorMessage } from '../utils/api-error';
 
@@ -51,6 +53,7 @@ export default function TicketsPage() {
   const [form, setForm] = useState({ title: '', description: '', assetId: '', category: 'OTHER' as TicketCategory, priority: 'MEDIUM' as TicketPriority });
   const [action, setAction] = useState<Action | null>(null);
   const [details, setDetails] = useState<Ticket | null>(null);
+  const [informationTicket, setInformationTicket] = useState<Ticket | null>(null);
   const [actionText, setActionText] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -243,6 +246,9 @@ export default function TicketsPage() {
                     <td className="whitespace-nowrap px-4 py-3">
                       <div className="inline-flex flex-wrap gap-3">
                         <button type="button" onClick={() => setDetails(ticket)} className="text-lug-gray hover:text-lug-charcoal">View</button>
+                        {!['COMPLETED', 'CLOSED', 'CANCELLED'].includes(ticket.status) && hasPermission('tickets.update') && (
+                          <button type="button" disabled={busy} onClick={() => setInformationTicket(ticket)} className="text-lug-red hover:underline disabled:opacity-50">Request info</button>
+                        )}
                         {ticket.status === 'NEW' && hasPermission('tickets.update') && (
                           <button type="button" disabled={busy} onClick={() => openAction(ticket, 'assign')} className="text-lug-red hover:underline disabled:opacity-50">Assign</button>
                         )}
@@ -277,6 +283,22 @@ export default function TicketsPage() {
       </section>
 
       {details && <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" onClick={() => setDetails(null)}><div className="w-full max-w-lg space-y-4 rounded bg-white p-6 shadow-xl" onClick={(event) => event.stopPropagation()}><div><h2 className="text-lg font-semibold">{details.ticketNumber}: {details.title}</h2><p className="mt-1 text-sm text-lug-gray">{details.requesterName || details.requesterUsername || 'Unknown requester'} · {details.departmentName || 'No department'}</p></div><dl className="grid grid-cols-2 gap-3 text-sm"><div><dt className="text-lug-gray">Category</dt><dd>{label(details.category)}</dd></div><div><dt className="text-lug-gray">Status</dt><dd>{label(details.status)}</dd></div><div><dt className="text-lug-gray">Asset</dt><dd>{details.assetTag || 'None'}</dd></div><div><dt className="text-lug-gray">Assigned technician</dt><dd>{details.assignedTo || 'Unassigned'}</dd></div><div className="col-span-2"><dt className="text-lug-gray">Description</dt><dd className="whitespace-pre-wrap">{details.description || 'No description'}</dd></div></dl><div className="flex justify-end border-t pt-4"><button type="button" onClick={() => setDetails(null)} className="rounded border px-4 py-2 text-sm">Close</button></div></div></div>}
+
+      {informationTicket && (
+        <TicketMessageDialog
+          title={`Request information for ${informationTicket.ticketNumber}`}
+          description="The requester will be notified by email and in the app."
+          submitLabel="Send request"
+          busy={busy}
+          onCancel={() => setInformationTicket(null)}
+          onSubmit={async (message) => {
+            setBusy(true); setError(null);
+            try { await requestTicketInformation(informationTicket.id, message); setInformationTicket(null); setSuccess('Information request sent.'); }
+            catch (reason) { setError(apiErrorMessage(reason, 'Unable to send the information request.')); }
+            finally { setBusy(false); }
+          }}
+        />
+      )}
 
       {adding && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4" role="dialog" aria-modal="true">

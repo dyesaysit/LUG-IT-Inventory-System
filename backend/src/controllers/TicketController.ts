@@ -35,4 +35,7 @@ export class TicketController {
   cancel(id: number) {
     return this.tickets.cancel(id);
   }
+  messages(id:number){return this.tickets.messages(id)}
+  requestInformation(id:number,userId:number,message:string){return this.tickets.requestInformation(id,userId,message)}
+  respond(id:number,userId:number,message:string){return this.tickets.respond(id,userId,message)}
 }

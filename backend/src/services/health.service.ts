@@ -1,5 +1,6 @@
 import { checkDatabaseHealth } from '../repositories/health.repository';
 import type { EnvConfig } from '../config';
+import { getCurrentDb } from '../database/connection';
 
 /** Shape of the health endpoint response. */
 export interface HealthResponse {
@@ -9,6 +10,7 @@ export interface HealthResponse {
   database: { status: 'connected' | 'disconnected' };
   timestamp: string;
   version: string;
+  setupRequired: boolean;
 }
 
 /**
@@ -19,6 +21,12 @@ export interface HealthResponse {
  */
 export function getHealth(config: EnvConfig): HealthResponse {
   const dbResult = checkDatabaseHealth();
+  const administrator = dbResult.ok
+    ? (getCurrentDb().prepare(`
+        SELECT COUNT(*) AS count FROM users u JOIN roles r ON r.id = u.role_id
+        WHERE r.code = 'SYSTEM_ADMINISTRATOR' AND u.is_active = 1 AND u.archived_at IS NULL
+      `).get() as { count: number })
+    : { count: 0 };
 
   return {
     status: dbResult.ok ? 'ok' : 'degraded',
@@ -29,5 +37,6 @@ export function getHealth(config: EnvConfig): HealthResponse {
     },
     timestamp: new Date().toISOString(),
     version: '1.0.0',
+    setupRequired: administrator.count === 0,
   };
 }

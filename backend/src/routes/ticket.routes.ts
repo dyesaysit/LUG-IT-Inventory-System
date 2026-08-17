@@ -6,6 +6,8 @@ import {
   ConvertTicketInputSchema,
   CreateTicketInputSchema,
   TicketListQuerySchema,
+  RequestTicketInfoInputSchema,
+  RespondTicketInfoInputSchema,
 } from 'shared';
 import type { TicketController } from '../controllers/TicketController';
 import { requireAuthentication, requirePermission } from '../middleware/auth';
@@ -81,6 +83,9 @@ export function createTicketRouter(controller: TicketController, authService: Au
   router.post('/:id/complete', ...withId('tickets.update', (id, req) => controller.complete(id, CompleteTicketInputSchema.parse(req.body))));
   router.post('/:id/close', ...withId('tickets.close', (id) => controller.close(id)));
   router.post('/:id/cancel', ...withId('tickets.update', (id) => controller.cancel(id)));
+  router.get('/:id/messages', ...withId('tickets.view', (id) => controller.messages(id)));
+  router.post('/:id/request-information', ...withId('tickets.update', (id,req) => controller.requestInformation(id,req.auth!.userId,RequestTicketInfoInputSchema.parse(req.body).message)));
+  router.post('/:id/respond', async (req,res,next)=>{try{const id=parseId(String(req.params.id));if(!id){res.status(400).json({success:false,error:'Invalid ticket ID'});return;}res.json(await controller.respond(id,req.auth!.userId,RespondTicketInfoInputSchema.parse(req.body).message));}catch(error){next(error)}});
 
   return router;
 }

@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "description": "School IT Inventory System - A modern inventory management application for school IT departments",
-  "author": "IT Dept Group Project - Lancaster University",
+  "author": "IT Inventory Server contributors",
   "license": "MIT",
   "workspaces": [
     "frontend",
@@ -17,6 +17,7 @@
     "build": "npm -w shared run build && npm -w backend run build && npm -w frontend run build",
     "build:frontend": "npm -w frontend run build",
     "build:backend": "npm -w backend run build",
+    "build:installer": "powershell -NoProfile -ExecutionPolicy Bypass -File installer/scripts/build-installer.ps1",
     "start": "npm -w backend run start",
     "auth:reset-admin": "npm -w backend run auth:reset-admin",
     "lint": "eslint . --ext .ts,.tsx --ignore-pattern node_modules --ignore-pattern dist",

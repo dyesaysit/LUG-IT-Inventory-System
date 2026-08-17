@@ -24,6 +24,7 @@ import {
 } from '../services/api';
 import { BackupPanel } from '../components/BackupPanel';
 import { LogoManager } from '../components/LogoManager';
+import { EmailSettingsPanel } from '../components/EmailSettingsPanel';
 
 const errorMessage = (error: unknown, fallback: string): string =>
   axios.isAxiosError<{ error?: string }>(error) ? error.response?.data.error ?? error.message : fallback;
@@ -59,6 +60,7 @@ type TabId =
   | 'maintenance'
   | 'reports'
   | 'security'
+  | 'email'
   | 'categories'
   | 'backup'
   | 'database'
@@ -104,6 +106,7 @@ const tabs: TabDef[] = [
   { id: 'maintenance', label: 'Maintenance & repairs' },
   { id: 'reports', label: 'Reports', requiredPermission: 'settings.reports' },
   { id: 'security', label: 'Security', requiredPermission: 'settings.security' },
+  { id: 'email', label: 'Email notifications', requiredPermission: 'settings.email' },
   { id: 'categories', label: 'Asset categories', requiredPermission: 'settings.categories' },
   { id: 'backup', label: 'Backup & restore', requiredPermission: 'settings.backup.view' },
   { id: 'database', label: 'Database maintenance', requiredPermission: 'settings.database' },
@@ -383,6 +386,8 @@ export default function SettingsPage() {
               ))}
             </div>
           )}
+
+          {activeTab === 'email' && <EmailSettingsPanel />}
 
           {activeTab === 'categories' && (
             <div className="space-y-4">

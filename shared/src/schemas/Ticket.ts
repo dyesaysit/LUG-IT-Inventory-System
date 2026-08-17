@@ -24,6 +24,9 @@ export const ConvertTicketInputSchema = z.object({
   repairType: z.enum(['INTERNAL', 'EXTERNAL', 'WARRANTY', 'EMERGENCY', 'OTHER']).optional(),
 });
 
+export const RequestTicketInfoInputSchema = z.object({ message:z.string().trim().min(3,'Enter the information required').max(2000) });
+export const RespondTicketInfoInputSchema = z.object({ message:z.string().trim().min(1,'Enter your response').max(2000) });
+
 export const TicketListQuerySchema = z.object({
   search: z.string().trim().max(120).optional(),
   status: z.enum(['NEW', 'ASSIGNED', 'IN_PROGRESS', 'COMPLETED', 'CLOSED', 'CANCELLED']).optional(),

@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useApplicationSettings } from '../context/ApplicationSettingsContext';
+import { fetchInitialSetupStatus } from '../services/api';
 
 /**
  * White-label institutional login page.
@@ -17,9 +18,16 @@ export function LoginPage() {
   const [error, setError] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const logoUrl = settings?.logoUrl || '/logo-placeholder.png';
+  useEffect(() => {
+    fetchInitialSetupStatus()
+      .then(({ setupRequired }) => { if (setupRequired) navigate('/setup', { replace: true }); })
+      .catch(() => undefined);
+  }, [navigate]);
+
+  const logoUrl = settings?.logoUrl;
   const logoHeight = settings?.logoDisplaySize ? `${parseInt(settings.logoDisplaySize, 10) * 0.45}px` : '3.5rem';
   const orgName = settings?.organizationName || 'Organization';
+  const shortName = settings?.organizationShortName || 'ORG';
   const sysName = settings?.systemName || 'IT Inventory System';
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,12 +57,7 @@ export function LoginPage() {
         <div className="relative flex flex-col justify-center px-14 py-12 w-full">
           <div className="mb-10">
             <div className="inline-block bg-white/95 rounded-md px-5 py-3 mb-8">
-              <img
-                src={logoUrl}
-                alt={orgName}
-                style={{ height: logoHeight }}
-                className="w-auto object-contain"
-              />
+              {logoUrl ? <img src={logoUrl} alt={orgName} style={{ height: logoHeight }} className="w-auto object-contain" /> : <span className="text-2xl font-bold text-lug-charcoal">{shortName}</span>}
             </div>
             <h1 className="text-3xl font-semibold text-white tracking-tight">
               {sysName}
@@ -77,12 +80,7 @@ export function LoginPage() {
           {/* Mobile/tablet logo and branding — hidden on desktop */}
           <div className="lg:hidden text-center mb-10">
             <div className="inline-block bg-white rounded-md px-4 py-2 shadow-sm border border-lug-light-gray mb-6">
-              <img
-                src={logoUrl}
-                alt={orgName}
-                style={{ height: logoHeight }}
-                className="w-auto mx-auto object-contain"
-              />
+              {logoUrl ? <img src={logoUrl} alt={orgName} style={{ height: logoHeight }} className="w-auto mx-auto object-contain" /> : <span className="text-xl font-bold text-lug-charcoal">{shortName}</span>}
             </div>
             <h1 className="text-2xl font-semibold text-lug-charcoal tracking-tight">
               {sysName}

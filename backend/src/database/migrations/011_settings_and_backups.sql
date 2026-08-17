@@ -73,8 +73,8 @@ WHERE r.code = 'IT_MANAGER'
 INSERT OR IGNORE INTO system_settings (category, key, value, value_type, description) VALUES
   ('ORGANIZATION', 'appName', 'School IT Inventory System', 'STRING', 'Display name shown in the application header and reports.'),
   ('ORGANIZATION', 'supportEmail', '', 'STRING', 'Support contact email shown to users.'),
-  ('ORGANIZATION', 'timezone', 'Africa/Accra', 'STRING', 'Timezone used for displaying dates and times.'),
-  ('ORGANIZATION', 'currency', 'GHS', 'STRING', 'Fixed system currency (Ghanaian Cedi). Not user-changeable.'),
+  ('ORGANIZATION', 'timezone', 'UTC', 'STRING', 'Timezone used for displaying dates and times.'),
+  ('ORGANIZATION', 'currency', 'USD', 'STRING', 'System currency code.'),
   ('SECURITY', 'maxFailedLoginAttempts', '5', 'NUMBER', 'Informational: failed attempts before an account is locked.'),
   ('SECURITY', 'lockoutDurationMinutes', '15', 'NUMBER', 'Informational: lockout duration after exceeding failed attempts.'),
   ('SECURITY', 'sessionHours', '8', 'NUMBER', 'Informational: default session duration in hours.'),
@@ -83,5 +83,5 @@ INSERT OR IGNORE INTO system_settings (category, key, value, value_type, descrip
   ('BACKUP', 'retentionCount', '10', 'NUMBER', 'Number of backups to retain before older ones may be removed.'),
   ('INVENTORY', 'defaultAssetCondition', 'GOOD', 'STRING', 'Default condition assigned to newly created assets.'),
   ('INVENTORY', 'warrantyExpiryWarningDays', '30', 'NUMBER', 'Days before warranty expiry to surface a warning.'),
-  ('REPORTS', 'includeLogoInReports', 'true', 'BOOLEAN', 'Whether the LUG logo is included in printed/exported reports.'),
+  ('REPORTS', 'includeLogoInReports', 'true', 'BOOLEAN', 'Whether the organization logo is included in printed/exported reports.'),
   ('REPORTS', 'defaultExportFormat', 'PDF_PRINT', 'STRING', 'Default export format offered on the reports page.');

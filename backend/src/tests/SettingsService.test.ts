@@ -141,7 +141,7 @@ describe('SettingsService', () => {
       (error: unknown) => error instanceof AppError && error.statusCode === 400,
     );
     const settings = await service.getByCategory('ORGANIZATION');
-    assert.equal(settings.find((setting) => setting.key === 'country')?.value, 'Ghana');
+    assert.equal(settings.find((setting) => setting.key === 'country')?.value, '');
     db.close();
   });
 });

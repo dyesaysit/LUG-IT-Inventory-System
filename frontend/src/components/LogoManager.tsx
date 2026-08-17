@@ -132,7 +132,7 @@ export function LogoManager({ disabled, onSuccess, onError }: LogoManagerProps) 
     }
   };
 
-  const currentLogo = settings?.logoUrl || '/LUG-logo-200x84-transparent.png';
+  const currentLogo = settings?.logoUrl || null;
   const effectivePreview = previewUrl || currentLogo;
 
   return (
@@ -195,12 +195,7 @@ export function LogoManager({ disabled, onSuccess, onError }: LogoManagerProps) 
               <div 
                 className="flex items-center justify-center border border-gray-100 rounded bg-gray-50 p-4 min-h-[140px] max-h-[140px] overflow-hidden"
               >
-                <img
-                  src={effectivePreview}
-                  alt={settings?.organizationName || 'Logo Preview'}
-                  className="max-h-[120px] max-w-full object-contain"
-                  style={{ width: `${logoSize}px` }}
-                />
+                {effectivePreview ? <img src={effectivePreview} alt={settings?.organizationName || 'Logo Preview'} className="max-h-[120px] max-w-full object-contain" style={{ width: `${logoSize}px` }} /> : <span className="flex h-20 min-w-20 items-center justify-center rounded-lg bg-lug-charcoal px-3 text-xl font-bold text-white">{settings?.organizationShortName || 'ORG'}</span>}
               </div>
             </div>
 

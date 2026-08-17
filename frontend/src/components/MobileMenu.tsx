@@ -325,12 +325,7 @@ export function MobileMenu({ open, onClose }: MobileMenuProps) {
         {/* Compact header */}
         <div className="flex items-center justify-between px-4 py-3.5 border-b border-white/10">
           <div className="flex items-center gap-2.5">
-            <img
-              src={settings?.logoUrl || '/LUG-logo-200x84-transparent.png'}
-              alt={settings?.organizationName || 'Organization'}
-              className="w-auto object-contain"
-              style={{ height: settings?.logoDisplaySize ? `${parseInt(settings.logoDisplaySize, 10) * 0.2}px` : '1.5rem' }}
-            />
+            {settings?.logoUrl ? <img src={settings.logoUrl} alt={settings.organizationName || 'Organization'} className="w-auto object-contain" style={{ height: settings.logoDisplaySize ? `${parseInt(settings.logoDisplaySize, 10) * 0.2}px` : '1.5rem' }} /> : <span className="flex h-7 min-w-7 items-center justify-center rounded bg-white px-1 text-[10px] font-bold text-lug-charcoal">{settings?.organizationShortName || 'ORG'}</span>}
             <div className="text-xs leading-tight">
               <p className="font-semibold text-white">{settings?.organizationShortName ? `${settings.organizationShortName} IT Inventory` : 'IT Inventory'}</p>
               <p className="text-gray-400 text-[11px]">{settings?.organizationName || 'IT Inventory'}</p>

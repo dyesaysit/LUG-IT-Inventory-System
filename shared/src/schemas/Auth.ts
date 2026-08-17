@@ -15,6 +15,21 @@ export const PasswordSchema = z
   .regex(/[0-9]/, 'Password must include at least one number')
   .regex(/[^A-Za-z0-9]/, 'Password must include at least one special character');
 
+export const InitialSetupInputSchema = z
+  .object({
+    username: UsernameSchema,
+    password: PasswordSchema,
+    confirmPassword: z.string().min(1, 'Confirm password is required').max(128),
+    systemName: z.string().trim().min(2, 'Inventory system name is required').max(120),
+    institutionName: z.string().trim().min(2, 'Organization name is required').max(160),
+    institutionShortName: z.string().trim().min(2, 'Organization short name is required').max(20),
+    logoDataUrl: z.string().max(3_000_000).optional(),
+  })
+  .refine((value) => value.password === value.confirmPassword, {
+    message: 'Password and confirmation do not match',
+    path: ['confirmPassword'],
+  });
+
 export const LoginInputSchema = z.object({
   identity: z.string().trim().min(1, 'Username or email is required').max(254),
   password: z.string().min(1, 'Password is required').max(128),

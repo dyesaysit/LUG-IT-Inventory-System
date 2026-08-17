@@ -24,10 +24,8 @@ export async function ensureInitialAdministrator(
   }
 
   if (!config.INITIAL_ADMIN_USERNAME || !config.INITIAL_ADMIN_PASSWORD) {
-    throw new AppError(
-      'Initial administrator credentials are required on first run. Set INITIAL_ADMIN_USERNAME and INITIAL_ADMIN_PASSWORD in environment variables.',
-      500,
-    );
+    console.log('No initial administrator credentials supplied. Starting in secure setup mode.');
+    return;
   }
 
   try {

@@ -36,7 +36,7 @@ export { MaintenanceRecordSchema,MaintenanceTypeSchema,MaintenancePrioritySchema
 export { RepairJobSchema,RepairTypeSchema,RepairPrioritySchema,RepairStatusSchema,RepairApprovalStatusSchema,RepairOutcomeSchema,CreateRepairInputSchema,UpdateRepairInputSchema,ApproveRepairInputSchema,CompleteRepairInputSchema,ReturnRepairInputSchema,RepairListQuerySchema } from './schemas/Repair';
 export { AuditLogSchema,AuditActionSchema,AuditEntityTypeSchema,AuditLogQuerySchema } from './schemas/Audit';
 export { ReportTypeSchema,ReportFormatSchema,ReportDateRangeSchema,ReportFilterSchema } from './schemas/Report';
-export { LoginInputSchema,ChangePasswordInputSchema,CreateUserInputSchema,UpdateUserInputSchema,ResetPasswordInputSchema,UserListQuerySchema,UsernameSchema,PasswordSchema } from './schemas/Auth';
+export { LoginInputSchema,ChangePasswordInputSchema,CreateUserInputSchema,UpdateUserInputSchema,ResetPasswordInputSchema,UserListQuerySchema,UsernameSchema,PasswordSchema,InitialSetupInputSchema } from './schemas/Auth';
 
 export {
   SettingCategorySchema,
@@ -66,5 +66,7 @@ export {
   AssignTicketInputSchema,
   CompleteTicketInputSchema,
   ConvertTicketInputSchema,
+  RequestTicketInfoInputSchema,
+  RespondTicketInfoInputSchema,
   TicketListQuerySchema,
 } from './schemas/Ticket';

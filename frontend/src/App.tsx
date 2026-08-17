@@ -23,6 +23,7 @@ import PortalRequestsPage from './pages/PortalRequestsPage';
 import PortalTicketsPage from './pages/PortalTicketsPage';
 import PortalProfilePage from './pages/PortalProfilePage';
 import NotificationHistoryPage from './pages/NotificationHistoryPage';
+import { InitialSetupPage } from './pages/InitialSetupPage';
 
 const MaintenancePage = lazy(() => import('./pages/MaintenancePage'));
 const RepairsPage = lazy(() => import('./pages/RepairsPage'));
@@ -50,6 +51,7 @@ export default function App() {
       <AuthProvider>
         <Suspense fallback={<RouteLoadingFallback />}>
           <Routes>
+          <Route path="/setup" element={<InitialSetupPage />} />
           <Route path="/" element={<LoginPage />} />
 
           <Route element={<ProtectedRoute />}>

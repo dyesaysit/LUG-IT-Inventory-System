@@ -85,6 +85,16 @@ export class BackupController {
     return backup;
   }
 
+  async getStorage(): Promise<{ directory: string }> { return this.backupService.getStorage(); }
+
+  async setStorage(directory: string): Promise<{ directory: string }> { return this.backupService.setStorage(directory); }
+
+  async importFile(buffer: Buffer, filename: string, createdBy: number | null): Promise<BackupRecord> {
+    const backup = await this.backupService.importBackup(buffer, filename, createdBy);
+    await recordAudit('SYSTEM', backup.id, 'CREATE', `Imported database backup ${backup.filename}`, null, backup);
+    return backup;
+  }
+
   async getDownload(id: number): Promise<{ filePath: string; filename: string }> {
     return this.backupService.getDownload(id);
   }

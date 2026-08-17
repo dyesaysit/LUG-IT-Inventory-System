@@ -12,6 +12,7 @@ export function createPublicRouter(settingsService: ISettingsService): Router {
   router.get('/public-settings', async (_req: Request, res: Response, next: NextFunction) => {
     try {
       const settings = await settingsService.getPublicSettings();
+      res.setHeader('Cache-Control', 'no-store');
       res.json(settings);
     } catch (error) {
       next(error);

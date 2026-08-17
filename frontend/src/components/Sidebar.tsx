@@ -288,28 +288,20 @@ export function Sidebar() {
     }))
     .filter((group) => group.items.length > 0);
 
-  const logoUrl = settings?.logoUrl || '/LUG-logo-200x84-transparent.png';
+  const logoUrl = settings?.logoUrl;
   const logoSize = settings?.logoDisplaySize ? `${parseInt(settings.logoDisplaySize, 10) * 0.25}px` : '1.75rem'; // scaling to match layout beautifully or relative h-7 size
   const orgName = settings?.organizationName || 'Organization';
   const sysName = settings?.systemName || 'IT Inventory System';
-  const sidebarTitle = settings?.organizationShortName
-    ? `${settings.organizationShortName} IT Inventory`
-    : 'IT Inventory';
 
   return (
     <aside className="hidden lg:flex lg:flex-col lg:w-60 lg:fixed lg:inset-y-0 bg-lug-charcoal z-30">
       {/* Logo area — compact */}
       <div className="px-4 py-4 border-b border-white/10">
         <div className="flex items-center gap-3">
-          <img
-            src={logoUrl}
-            alt={orgName}
-            className="w-auto object-contain"
-            style={{ height: logoSize }}
-          />
+          {logoUrl ? <img src={logoUrl} alt={orgName} className="w-auto object-contain" style={{ height: logoSize }} /> : <span className="flex h-8 min-w-8 items-center justify-center rounded bg-white px-1 text-xs font-bold text-lug-charcoal">{settings?.organizationShortName || 'ORG'}</span>}
           <div className="text-xs leading-tight">
-            <p className="font-semibold text-white">{sidebarTitle}</p>
-            <p className="text-gray-400 text-[11px]">
+            <p className="truncate font-semibold text-white" title={sysName}>{sysName}</p>
+            <p className="truncate text-gray-400 text-[11px]" title={orgName}>
               {orgName}
             </p>
           </div>

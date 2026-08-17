@@ -2,7 +2,7 @@ import { z } from 'zod';
 import type { CreateAssetCategoryInput, UpdateAssetCategoryInput } from '../types/Asset';
 
 /** Runtime schema for a settings category. */
-export const SettingCategorySchema = z.enum(['ORGANIZATION', 'INVENTORY', 'ASSIGNMENTS', 'MAINTENANCE', 'REPORTS', 'SECURITY']);
+export const SettingCategorySchema = z.enum(['ORGANIZATION', 'INVENTORY', 'ASSIGNMENTS', 'MAINTENANCE', 'REPORTS', 'SECURITY', 'EMAIL']);
 
 /** Runtime schema for a setting's value type. */
 export const SettingValueTypeSchema = z.enum(['STRING', 'NUMBER', 'BOOLEAN', 'JSON']);

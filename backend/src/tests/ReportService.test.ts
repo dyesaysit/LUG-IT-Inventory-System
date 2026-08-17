@@ -111,7 +111,7 @@ describe('ReportService', () => {
     assert.equal(workbook.worksheets.length, 1);
     assert.match(workbook.worksheets[0]!.name, /Asset register/i);
     const print = await test.service.export('ASSET_REGISTER', {}, 'PDF_PRINT', 'tester');
-    assert.match(String(print.body), /Lancaster University Ghana/);
+    assert.match(String(print.body), /Organization/);
     assert.match(String(print.body), /A-101 &lt;QA&gt;/);
     assert.doesNotMatch(String(print.body), /A-101 <QA>/);
     assert.match(String(print.body), /@media print/);

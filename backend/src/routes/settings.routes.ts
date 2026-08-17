@@ -5,6 +5,9 @@ import type { BackupController, SettingsController } from '../controllers/Settin
 import { requireAuthentication, requirePermission } from '../middleware/auth';
 import type { AuthService } from '../services/AuthService';
 import { settingsPermissionForCategory } from '../services/SettingsService';
+import type { EmailService, EmailSettingsInput } from '../services/EmailService';
+import { z } from 'zod';
+import multer from 'multer';
 
 const parseId = (value: string): number | null => {
   if (!/^\d+$/.test(value)) return null;
@@ -17,7 +20,7 @@ const canManageAnySettings = (permissions: string[]): boolean =>
   permissions.includes('settings.manage') || permissions.includes('settings.security') || permissions.includes('settings.reports');
 
 /** Creates the router for the Settings module (settings, system info, database maintenance). */
-export function createSettingsRouter(controller: SettingsController, authService: AuthService): Router {
+export function createSettingsRouter(controller: SettingsController, authService: AuthService, emailService: EmailService): Router {
   const router = Router();
   router.use(requireAuthentication(authService));
 
@@ -37,6 +40,19 @@ export function createSettingsRouter(controller: SettingsController, authService
     } catch (error) {
       next(error);
     }
+  });
+
+  router.get('/email/config', requirePermission('settings.email'), async (_req, res, next) => {
+    try { res.json(await emailService.getSettings()); } catch (error) { next(error); }
+  });
+  router.put('/email/config', requirePermission('settings.email'), async (req, res, next) => {
+    try {
+      const input = z.object({ enabled:z.boolean(),smtpHost:z.string().max(255),smtpPort:z.number().int(),smtpSecure:z.boolean(),smtpUsername:z.string().max(255),smtpPassword:z.string().max(500).optional(),fromName:z.string().max(120),fromAddress:z.string().max(254),applicationUrl:z.string().max(500) }).parse(req.body) as EmailSettingsInput;
+      res.json(await emailService.save(input, req.auth!.userId));
+    } catch (error) { next(error); }
+  });
+  router.post('/email/test', requirePermission('settings.email'), async (req, res, next) => {
+    try { const {recipient}=z.object({recipient:z.string().email()}).parse(req.body);await emailService.test(recipient);res.json({success:true,message:'The SMTP server accepted the test email.'}); } catch(error){next(error);}
   });
 
   router.get('/database/status', requirePermission('settings.database'), async (_req: Request, res: Response, next: NextFunction) => {
@@ -144,6 +160,7 @@ export function createSettingsRouter(controller: SettingsController, authService
 /** Creates the router for backup creation, listing, download, verification, and restore. Mounted at `/api/settings/backups`. */
 export function createBackupRouter(controller: BackupController, authService: AuthService): Router {
   const router = Router();
+  const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 250 * 1024 * 1024, files: 1 } });
   router.use(requireAuthentication(authService));
 
   router.get('/', requirePermission('settings.backup.view'), async (_req: Request, res: Response, next: NextFunction) => {
@@ -165,6 +182,18 @@ export function createBackupRouter(controller: BackupController, authService: Au
 
   router.get('/:id', requirePermission('settings.backup.view'), async (req: Request, res: Response, next: NextFunction) => {
     try { const id=parseId(String(req.params.id)); if(id===null){res.status(400).json({success:false,error:'Invalid backup ID'});return;} res.json(await controller.get(id)); } catch(error){next(error);}
+  });
+
+  router.get('/storage/config', requirePermission('settings.backup.view'), async (_req, res, next) => {
+    try { res.json(await controller.getStorage()); } catch (error) { next(error); }
+  });
+
+  router.put('/storage/config', requirePermission('settings.backup.create'), async (req, res, next) => {
+    try { const {directory}=z.object({directory:z.string().min(1).max(1000)}).parse(req.body);res.json(await controller.setStorage(directory)); } catch (error) { next(error); }
+  });
+
+  router.post('/import', requirePermission('settings.backup.restore'), upload.single('backup'), async (req, res, next) => {
+    try { if(!req.file)throw new Error('Select a backup file.');res.status(201).json(await controller.importFile(req.file.buffer,req.file.originalname,req.auth!.userId)); } catch (error) { next(error); }
   });
 
   router.get('/:id/download', requirePermission('settings.backup.download'), async (req: Request, res: Response, next: NextFunction) => {

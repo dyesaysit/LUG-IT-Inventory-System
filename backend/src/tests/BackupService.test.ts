@@ -3,10 +3,12 @@ import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
 import { describe, it } from 'node:test';
+import Database from 'better-sqlite3';
 import { AppError } from '../middleware/errorHandler';
 import { closeDb, getDb } from '../database/connection';
 import { BackupRepository } from '../repositories/BackupRepository';
 import { SafeBackupService, applyPendingRestore, finalizePendingRestore } from '../services/SafeBackupService';
+import { ensureSecretKey, resolveSecretKeyPath } from '../services/SecretService';
 import type { EnvConfig } from '../config';
 
 const sql = (name: string) => fs.readFileSync(path.resolve(__dirname, `../database/migrations/${name}`), 'utf8');
@@ -27,6 +29,7 @@ const setup = () => {
     SESSION_HOURS: 8,
     SESSION_REMEMBER_DAYS: 14,
     BACKUP_DIRECTORY: backupDir,
+    APPLICATION_DATA_DIR: path.join(tempDir, 'application-data'),
   };
 
   const db = getDb(config);
@@ -36,6 +39,7 @@ const setup = () => {
   }
 
   const service = new SafeBackupService(config, new BackupRepository(db));
+  ensureSecretKey(config);
   return { tempDir, config, service };
 };
 
@@ -67,6 +71,45 @@ describe('BackupService', { concurrency: false }, () => {
     const backup = await service.createBackup(null);
     const download = await service.getDownload(backup.id);
     assert.ok(fs.existsSync(download.filePath));
+    teardown(tempDir);
+  });
+
+  it('saves new backups to an administrator-selected directory', async () => {
+    const { tempDir, service } = setup();
+    const externalDirectory = path.join(tempDir, 'mounted-backup-device');
+    const storage = await service.setStorage(externalDirectory);
+    const backup = await service.createBackup(null);
+    const download = await service.getDownload(backup.id);
+    assert.equal(storage.directory, path.resolve(externalDirectory));
+    assert.equal(path.dirname(download.filePath), path.resolve(externalDirectory));
+    teardown(tempDir);
+  });
+
+  it('imports and validates a selected portable backup file', async () => {
+    const { tempDir, service } = setup();
+    const source = await service.createBackup(null);
+    const sourceFile = await service.getDownload(source.id);
+    const imported = await service.importBackup(fs.readFileSync(sourceFile.filePath), source.filename, null);
+    assert.equal(imported.status, 'COMPLETED');
+    assert.match(imported.filename, /^imported-/);
+    assert.equal((await service.verifyBackup(imported.id)).valid, true);
+    teardown(tempDir);
+  });
+
+  it('rejects an uploaded file that is not an inventory backup', async () => {
+    const { tempDir, service } = setup();
+    await assert.rejects(service.importBackup(Buffer.alloc(2048, 1), 'fake.sqlite', null));
+    teardown(tempDir);
+  });
+
+  it('embeds the encryption key in a portable backup', async () => {
+    const { tempDir, service } = setup();
+    const backup = await service.createBackup(null);
+    const download = await service.getDownload(backup.id);
+    const backupDb = new Database(download.filePath, { readonly: true });
+    const row = backupDb.prepare("SELECT value FROM portable_backup_secrets WHERE name='email_encryption_key'").get() as { value: Buffer };
+    backupDb.close();
+    assert.equal(row.value.length, 32);
     teardown(tempDir);
   });
 
@@ -107,8 +150,11 @@ describe('BackupService', { concurrency: false }, () => {
     const backup = await service.createBackup(null);
     const result=await service.restoreBackup(backup.id, null);
     assert.equal(result.restartRequired,true);
+    const originalKey = fs.readFileSync(resolveSecretKeyPath(config));
+    fs.writeFileSync(resolveSecretKeyPath(config), Buffer.alloc(32, 7));
     closeDb();
     const marker=applyPendingRestore(config);
+    assert.deepEqual(fs.readFileSync(resolveSecretKeyPath(config)), originalKey);
     const db = getDb(config);
     finalizePendingRestore(config,db,marker);
     const row = db.prepare('SELECT COUNT(*) as count FROM backup_records').get() as { count: number };

@@ -1,4 +1,5 @@
 import dotenv from 'dotenv';
+import fs from 'node:fs';
 import path from 'path';
 
 // Load .env from the repository root before anything else.
@@ -24,7 +25,10 @@ const main = async () => {
   const pendingRestore = applyPendingRestore(config);
   const db = getDb(config);
 
-  const migrationsDir = path.resolve(__dirname, 'database/migrations');
+  const compiledMigrationsDir = path.resolve(__dirname, 'database/migrations');
+  const migrationsDir = fs.existsSync(compiledMigrationsDir)
+    ? compiledMigrationsDir
+    : path.resolve(__dirname, '../src/database/migrations');
   try {
     await runMigrations(db, migrationsDir);
     finalizePendingRestore(config, db, pendingRestore);
@@ -36,13 +40,7 @@ const main = async () => {
   }
 
   const passwordService = new PasswordService();
-  try {
-    await ensureInitialAdministrator(db, config, passwordService);
-  } catch (err) {
-    console.error(err instanceof Error ? err.message : 'Initial administrator bootstrap failed.');
-    closeDb();
-    process.exit(1);
-  }
+  await ensureInitialAdministrator(db, config, passwordService);
 
   const startupAuthService = new AuthService(
     createUserRepository(),
@@ -55,8 +53,9 @@ const main = async () => {
 
   const app = createApp(config);
 
-  const server = app.listen(config.PORT, () => {
-    console.log(`[${config.APP_NAME}] listening on http://localhost:${config.PORT}`);
+  const host = process.env.HOST ?? '127.0.0.1';
+  const server = app.listen(config.PORT, host, () => {
+    console.log(`[${config.APP_NAME}] listening on http://${host}:${config.PORT}`);
     console.log(`Environment: ${config.NODE_ENV}`);
     void recordAudit('SYSTEM',null,'START','Application started');
   });

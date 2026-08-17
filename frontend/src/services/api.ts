@@ -87,6 +87,8 @@ import type {
   UserListQuery,
   Notification,
   NotificationListQuery,
+  InitialSetupInput,
+  InitialSetupStatus,
 } from 'shared';
 
 /**
@@ -103,7 +105,8 @@ api.interceptors.response.use(
     if (!axios.isAxiosError<{ error?: string }>(error)) return Promise.reject(error);
     const status = error.response?.status;
     const validationMessage = status && status < 500 ? error.response?.data?.error : undefined;
-    return Promise.reject(new Error(validationMessage ?? 'We could not complete this request. Please try again.'));
+    error.message = validationMessage ?? 'We could not complete this request. Please try again.';
+    return Promise.reject(error);
   },
 );
 
@@ -116,11 +119,26 @@ const DEPARTMENTS_ENDPOINT = '/departments';
 const PEOPLE_ENDPOINT = '/people';
 const LOCATIONS_ENDPOINT = '/locations';
 const ASSIGNMENTS_ENDPOINT = '/assignments';
+
+export interface EmailSettingsView { enabled:boolean;smtpHost:string;smtpPort:number;smtpSecure:boolean;smtpUsername:string;fromName:string;fromAddress:string;applicationUrl:string;passwordConfigured:boolean }
+export interface EmailSettingsInput extends Omit<EmailSettingsView,'passwordConfigured'>{smtpPassword?:string}
+export const fetchEmailSettings=async():Promise<EmailSettingsView>=>(await api.get('/settings/email/config')).data;
+export const saveEmailSettings=async(input:EmailSettingsInput):Promise<EmailSettingsView>=>(await api.put('/settings/email/config',input)).data;
+export const sendTestEmail=async(recipient:string):Promise<{success:boolean;message:string}>=>(await api.post('/settings/email/test',{recipient})).data;
 const MAINTENANCE_ENDPOINT = '/maintenance';
 const REPAIRS_ENDPOINT = '/repairs';
 const AUDIT_ENDPOINT = '/audit';
 const REPORTS_ENDPOINT = '/reports';
 const AUTH_ENDPOINT = '/auth';
+
+/** Fetches whether the one-time administrator setup is required. */
+export const fetchInitialSetupStatus = async (): Promise<InitialSetupStatus> =>
+  (await api.get<InitialSetupStatus>('/setup')).data;
+
+/** Completes the one-time initial administrator setup. */
+export const completeInitialSetup = async (input: InitialSetupInput): Promise<void> => {
+  await api.post('/setup', input);
+};
 
 /** Logs in with credentials; the session is issued as an httpOnly cookie. */
 export const login = async (input: LoginInput): Promise<LoginResponse> =>
@@ -201,6 +219,8 @@ export const closeTicket = async (id: number): Promise<Ticket> =>
   (await api.post<Ticket>(`/tickets/${id}/close`)).data;
 export const cancelTicket = async (id: number): Promise<Ticket> =>
   (await api.post<Ticket>(`/tickets/${id}/cancel`)).data;
+export const requestTicketInformation = async (id:number,message:string):Promise<void>=>{await api.post(`/tickets/${id}/request-information`,{message})};
+export const respondToTicket = async (id:number,message:string):Promise<void>=>{await api.post(`/tickets/${id}/respond`,{message})};
 export const fetchPermissions = async (): Promise<Permission[]> => (await api.get<Permission[]>('/permissions')).data;
 export const fetchNotifications = async (query:NotificationListQuery={}):Promise<Notification[]> => (await api.get<Notification[]>('/notifications',{params:query})).data;
 export const fetchUnreadNotificationCount = async ():Promise<number> => (await api.get<{count:number}>('/notifications/unread-count')).data.count;
@@ -395,6 +415,39 @@ export const updatePerson = async (id: number, input: UpdatePersonInput): Promis
 /** Soft-archives a person. */
 export const archivePerson = async (id: number): Promise<void> => {
   await api.delete(`${PEOPLE_ENDPOINT}/${id}`);
+};
+
+/** Result returned after processing a People Excel workbook. */
+export interface PeopleImportResult {
+  imported: number;
+  failed: number;
+  errors: Array<{ row: number; message: string }>;
+}
+
+/** Downloads the current People import template. */
+export const downloadPeopleImportTemplate = async (): Promise<void> => {
+  const response = await api.get<Blob>(`${PEOPLE_ENDPOINT}/import-template`, { responseType: 'blob' });
+  const url = URL.createObjectURL(response.data);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'people-import-template.xlsx';
+  link.click();
+  URL.revokeObjectURL(url);
+};
+
+/** Uploads a completed People import workbook. */
+export const importPeopleWorkbook = async (
+  file: File,
+  onProgress?: (percentage: number) => void,
+): Promise<PeopleImportResult> => {
+  const formData = new FormData();
+  formData.append('file', file);
+  return (await api.post<PeopleImportResult>(`${PEOPLE_ENDPOINT}/import`, formData, {
+    onUploadProgress: (event) => {
+      if (!event.total) return;
+      onProgress?.(Math.min(70, Math.round((event.loaded / event.total) * 70)));
+    },
+  })).data;
 };
 
 /** Fetches locations matching supplied filters. */
@@ -640,8 +693,8 @@ export const uploadLogo = async (file: File): Promise<{ success: boolean; logoUr
 };
 
 /** Removes custom organization logo, reverting to default. */
-export const deleteLogo = async (): Promise<{ success: boolean; logoUrl: string }> =>
-  (await api.delete<{ success: boolean; logoUrl: string }>(`${SETTINGS_ENDPOINT}/branding/logo`)).data;
+export const deleteLogo = async (): Promise<{ success: boolean; logoUrl: string | null }> =>
+  (await api.delete<{ success: boolean; logoUrl: string | null }>(`${SETTINGS_ENDPOINT}/branding/logo`)).data;
 
 /** Fetches all system settings, grouped by category. */
 export const fetchSettings = async (): Promise<SettingsResponse> =>
@@ -694,6 +747,21 @@ export const fetchBackups = async (): Promise<BackupRecord[]> =>
 export const createBackup = async (): Promise<BackupRecord> =>
   (await api.post<BackupRecord>(BACKUPS_ENDPOINT)).data;
 
+/** Returns the server/device directory used for newly created backups. */
+export const fetchBackupStorage = async (): Promise<{ directory: string }> =>
+  (await api.get<{ directory: string }>(`${BACKUPS_ENDPOINT}/storage/config`)).data;
+
+/** Changes the server/device directory used for newly created backups. */
+export const saveBackupStorage = async (directory: string): Promise<{ directory: string }> =>
+  (await api.put<{ directory: string }>(`${BACKUPS_ENDPOINT}/storage/config`, { directory })).data;
+
+/** Uploads and validates an existing SQLite backup before adding it to restore history. */
+export const importBackup = async (file: File): Promise<BackupRecord> => {
+  const body = new FormData();
+  body.append('backup', file);
+  return (await api.post<BackupRecord>(`${BACKUPS_ENDPOINT}/import`, body)).data;
+};
+
 /** Recalculates a backup checksum and reports whether it still matches. */
 export const verifyBackup = async (id: number): Promise<{ valid: boolean; checksum: string | null }> =>
   (await api.post<{ valid: boolean; checksum: string | null }>(`${BACKUPS_ENDPOINT}/${id}/verify`)).data;
@@ -701,7 +769,7 @@ export const verifyBackup = async (id: number): Promise<{ valid: boolean; checks
 /** Downloads a completed backup file to the user's device. */
 export const downloadBackup = async (id: number, filename: string): Promise<void> => {
   const response = await api.get<Blob>(`${BACKUPS_ENDPOINT}/${id}/download`, { responseType: 'blob' });
-  if (!String(response.headers['content-type'] ?? '').includes('sqlite')) throw new Error('The server did not return a SQLite backup file.');
+  if (String(response.headers['content-type'] ?? '').includes('json')) throw new Error('The server did not return a SQLite backup file.');
   const url = URL.createObjectURL(response.data);
   const link = document.createElement('a');
   link.href = url;

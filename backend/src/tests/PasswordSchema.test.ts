@@ -5,7 +5,7 @@ import { PasswordSchema } from 'shared';
 /** Shared password policy: min 6 chars, 1 uppercase, 1 number, 1 special character. */
 describe('PasswordSchema', () => {
   it('accepts passwords meeting the policy', () => {
-    for (const password of ['Admin@1', 'School#2', 'LUG!2026', 'ABCD@1']) {
+    for (const password of ['Admin@1', 'School#2', 'Stock!2026', 'ABCD@1']) {
       assert.doesNotThrow(() => PasswordSchema.parse(password));
     }
   });

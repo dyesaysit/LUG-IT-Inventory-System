@@ -28,7 +28,11 @@ npm-debug.log*
 
 # Coverage
 coverage/
+installer/staging/
+installer/staging-package/
+installer/output/
 
 # Environment
 .env.local
 .env.*.local
+installer/*.exe

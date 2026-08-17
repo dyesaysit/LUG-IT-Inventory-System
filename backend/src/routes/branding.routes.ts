@@ -3,6 +3,7 @@ import type { NextFunction, Request, Response } from 'express';
 import multer from 'multer';
 import path from 'node:path';
 import fs from 'node:fs';
+import os from 'node:os';
 import { requireAuthentication, requirePermission } from '../middleware/auth';
 import type { AuthService } from '../services/AuthService';
 import type { ISettingsService } from '../services/SettingsService';
@@ -10,7 +11,10 @@ import { AppError } from '../middleware/errorHandler';
 import { recordAudit } from '../services/audit-event';
 
 // Static/persistent branding storage directory
-const BRANDING_DIR = path.resolve(__dirname, '../../../database/branding');
+const BRANDING_DIR = path.resolve(
+  process.env.APPLICATION_DATA_DIR ?? path.join(process.env.PROGRAMDATA ?? process.env.LOCALAPPDATA ?? os.homedir(), 'IT-Inventory-Server'),
+  'branding',
+);
 
 // Allowed MIME types and extensions maps
 const ALLOWED_MIMES = {
@@ -221,7 +225,7 @@ export function createBrandingRouter(settingsService: ISettingsService, authServ
 
       res.status(200).json({
         success: true,
-        logoUrl: '/LUG-logo-200x84-transparent.png',
+        logoUrl: null,
         setting: updatedSetting
       });
     } catch (err) {
